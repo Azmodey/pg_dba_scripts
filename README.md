@@ -10,7 +10,7 @@ A collection of scripts for PostgreSQL DBA. Tested on PostgreSQL 12-13 under Cen
 - [scripts/pg_database_start.sh](#pg_database_start.sh). Start PostgreSQL, confirmation is required.
 - [scripts/pg_database_stop.sh](#pg_database_stop.sh). Stop PostgreSQL, confirmation is required.
 - [scripts/pg_database_status.sh](#pg_database_status.sh). PosgtreSQL status. Additionally, PosgtreSQL processes and replication services are displayed.
-- [scripts/settings.txt](#). General settings for all scripts. Required before starting work.
+- [scripts/settings.txt](#Setup). General settings for all scripts. Required before starting work.
 
 
 ## Installation
