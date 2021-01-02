@@ -1,6 +1,6 @@
 ## pg_dba_scripts - PostgreSQL DBA scripts
 
-A collection of scripts for PostgreSQL DBA. Tested on PostgreSQL 12-13 under CentOS 7.
+A collection of scripts for PostgreSQL database administrator (DBA). Tested on PostgreSQL 12-13 under CentOS 7.
 
 - [scripts/pg_database_activity.sh](#pg_database_activity). PostgreSQL monitoring script. Displays PostgreSQL version, hostname and IP address, CPU and Disks load. Memory consumption by PostgreSQL processes, statistics on databases, waits and locks, archive and replication statuses. When activities occur in PostgreSQL, the progress of operations is displayed: vacuum, vacuum full or cluster, index creation, analyze, pg_basebackup. At the end, the last entries of the PostgreSQL log file are displayed.
 - [scripts/pg_database_activity_refresh.sh](#). Fast refresh of the **pg_database_activity.sh** script every 5 seconds.
