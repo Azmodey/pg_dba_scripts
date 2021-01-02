@@ -5,11 +5,11 @@ A collection of scripts for PostgreSQL database administrator (DBA). Tested on P
 - [scripts/pg_database_activity.sh](#pg_database_activity). PostgreSQL monitoring script, all information is displayed on one page. Displays PostgreSQL version and status (Master / Replica), hostname and IP address, CPU and Disks load. It also displays memory consumption by PostgreSQL processes, statistics on databases, waits and locks, archive and replication statuses. When activities occur in PostgreSQL, the progress of operations is displayed: vacuum, vacuum full or cluster, index creation, analyze, pg_basebackup. At the end, the last entries of the PostgreSQL log file are displayed. For ease of perception, information is displayed in color.
 - [scripts/pg_database_activity_refresh.sh](#). Fast refresh of the **pg_database_activity.sh** script every 5 seconds.
 - [scripts/pg_database_hugepages.sh](#pg_database_hugepages). Shows current usage of HugePages and recommended settings for PostgreSQL.
-- [scripts/pg_database_logs.sh](#pg_database_logs). Shows the PostgreSQL log file with auto-update. The log file is selected automatically.
-- [pg_database_reload_conf.sh](#pg_database_reload_conf). Reloads PostgreSQL configuration files (postgresql.conf, postgresql.auto.conf, pg_hba.conf, pg_ident.conf), displays records related to changes from the log file. If the changed parameter requires a restart, its characteristics are displayed. Operation confirmation is required.
 - [scripts/pg_database_start.sh](#pg_database_start). Start PostgreSQL, confirmation is required.
 - [scripts/pg_database_stop.sh](#pg_database_stop). Stop PostgreSQL, confirmation is required.
 - [scripts/pg_database_status.sh](#pg_database_status). PostgreSQL status. Additionally, PostgreSQL processes and replication services are displayed.
+- [scripts/pg_database_reload_conf.sh](#pg_database_reload_conf). Reloads PostgreSQL configuration files (postgresql.conf, postgresql.auto.conf, pg_hba.conf, pg_ident.conf), displays records related to changes from the log file. If the changed parameter requires a restart, its characteristics are displayed. Operation confirmation is required.
+- [scripts/pg_database_logs.sh](#pg_database_logs). Shows the PostgreSQL log file with auto-update. The log file is selected automatically.
 - [scripts/settings.txt](#Setup). General settings for all scripts. Required before starting work.
 
 
@@ -58,18 +58,6 @@ Shows current usage of HugePages and recommended settings for PostgreSQL.
 
 
 ---
-### pg_database_logs
-
-Shows the PosgreSQL log file with auto-update. The log file is selected automatically.
-
-
----
-### pg_database_reload_conf
-
-Reloads PostgreSQL configuration files (postgresql.conf, postgresql.auto.conf, pg_hba.conf, pg_ident.conf), displays records related to changes from the log file. If the changed parameter requires a restart, its characteristics are displayed. Operation confirmation is required.
-
-
----
 ### pg_database_start
 
 Start PostgreSQL, confirmation is required.
@@ -85,4 +73,16 @@ Stop PostgreSQL, confirmation is required.
 ### pg_database_status
 
 PostgreSQL status. Additionally, PostgreSQL processes and replication services are displayed.
+
+
+---
+### pg_database_reload_conf
+
+Reloads PostgreSQL configuration files (postgresql.conf, postgresql.auto.conf, pg_hba.conf, pg_ident.conf), displays records related to changes from the log file. If the changed parameter requires a restart, its characteristics are displayed. Operation confirmation is required.
+
+
+---
+### pg_database_logs
+
+Shows the PosgreSQL log file with auto-update. The log file is selected automatically.
 
