@@ -3,7 +3,7 @@
 A collection of scripts for PostgreSQL DBA. Tested on PostgreSQL 12-13 under CentOS 7.
 
 - [scripts/pg_database_activity.sh](#pg_database_activity). PostgreSQL monitoring script. Displays PostgreSQL version, hostname and IP address, CPU and Disks load. Memory consumption by PostgreSQL processes, statistics on databases, waits and locks, archive and replication statuses. When activities occur in PostgreSQL, the progress of operations is displayed: vacuum, vacuum full or cluster, index creation, analyze, pg_basebackup. At the end, the last entries of the PostgreSQL log file are displayed.
-- [scripts/pg_database_activity_refresh.sh](#). Fast refresh of the pg_database_activity.sh script every 5 seconds.
+- [scripts/pg_database_activity_refresh.sh](#). Fast refresh of the **pg_database_activity.sh** script every 5 seconds.
 - [scripts/pg_database_hugepages.sh](#pg_database_hugepages). Shows current usage of HugePages and recommended settings for PostgreSQL.
 - [scripts/pg_database_logs.sh](#pg_database_logs). Shows the PostgreSQL log file with auto-update. The log file is selected automatically.
 - [pg_database_reload_conf.sh](#pg_database_reload_conf). Reloads PostgreSQL configuration files (postgresql.conf, postgresql.auto.conf, pg_hba.conf, pg_ident.conf), displays records related to changes from the log file. If the changed parameter requires a restart, its characteristics are displayed. Operation confirmation is required.
