@@ -154,20 +154,18 @@ $PG_BIN/psql -c "select p.datid, p.datname, pg_size_pretty(pg_database_size(p.da
 
 
 
+# Wait events (1st column) & Lock events (2nd column)
+echo -e "${GREENLIGHT}Wait events:                                                 ${YELLOW}Lock events:${NC}"
+
 # Wait events
-echo -e "${GREENLIGHT}Wait events:${NC}"
-$PG_BIN/psql -c "select wait_event_type, wait_event, count(*) as connections from pg_stat_activity where wait_event_type is not null and wait_event_type <> 'Activity' group by wait_event_type, wait_event order by 3 desc;" | grep -v row
+$PG_BIN/psql -c "select wait_event_type, wait_event, count(*) as connections from pg_stat_activity where wait_event_type is not null and wait_event_type <> 'Activity' group by wait_event_type, wait_event order by 3 desc;" | grep -v row > pg_database_activity_wait.txt
 
+# Lock events
+$PG_BIN/psql -c "select d.datname, l.locktype, l.mode, count(*) from pg_locks l, pg_database d where l.database=d.oid and l.database is not null and l.granted = true group by d.datname, l.locktype, l.mode order by 4 desc;" | grep -v row > pg_database_activity_locks.txt
 
-
-# Locks statement duration
-locks_status=`$PG_BIN/psql -t -c "SELECT a.query FROM pg_locks bl JOIN pg_stat_activity a ON a.pid = bl.pid WHERE NOT bl.GRANTED;"`
-if [[ ${#locks_status} >0 ]]; then
-  echo -e "${YELLOW}Locks:${NC}"
-  #$PG_BIN/psql -c "select d.datname, t.schemaname, t.relname as table, l.locktype, page, virtualtransaction, pid, mode, granted from pg_locks l, pg_stat_all_tables t, pg_database d where l.relation=t.relid and l.database=d.oid order by relation asc;" | grep -v row
-  $PG_BIN/psql -c "SELECT a.query AS blocking_statement, EXTRACT('epoch' FROM NOW() - a.query_start) AS blocking_duration FROM pg_locks bl JOIN pg_stat_activity a ON a.pid = bl.pid WHERE NOT bl.GRANTED;" | grep -v row
-  PG_LOG_LINES=$((PG_LOG_LINES-5))
-fi
+paste pg_database_activity_wait.txt pg_database_activity_locks.txt | awk -F'\t' '{printf("%-60s %s\n",$1,$2)}'
+rm pg_database_activity_wait.txt
+rm pg_database_activity_locks.txt
 
 
 
