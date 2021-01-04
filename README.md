@@ -53,12 +53,12 @@ PG_LOG_LINES=15		# PostgreSQL log lines to show. 0 - disable output
 
 **Examples of work:**
 
-pg_database_activity.sh - Running pgbench. WALSync wait, Row Exclusive lock and Replication lag appeared. WalSender process consumes 6.7% CPU.
+Running pgbench, 10 backend connections. WALSync wait, Row Exclusive lock and Replication lag appeared. WalSender process consumes 6.7% CPU. CPU load 4.44 %.
 
 ![pg_database_activity1](media/dbactivity1.png)
 
 
-pg_database_activity.sh - Vacuum full command executing with Access Exclusive lock. The number of PostgreSQL log file entries has automatically decreased.
+Vacuum full command executing with Access Exclusive lock. The number of PostgreSQL log file entries has automatically decreased. WalSender process consumes 11.6% CPU. Disk load 14.76 %.
 
 ![pg_database_activity2](media/dbactivity2.png)
 
