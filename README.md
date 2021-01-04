@@ -51,11 +51,11 @@ Change the value of the PG_LOG_LINES parameter in the script, which is responsib
 PG_LOG_LINES=15		# PostgreSQL log lines to show. 0 - disable output
 ```
 
-pg_database_activity - running pgbench
-![pg_database_activity1](media/dbactivity1.png)
+pg_database_activity - Running pgbench
+![pg_database_activity1](media/dbactivity1.gif)
 
-pg_database_activity - vacuum full command executing
-![pg_database_activity2](media/dbactivity2.png)
+pg_database_activity - Vacuum full command executing
+![pg_database_activity2](media/dbactivity2.gif)
 
 
 ---
