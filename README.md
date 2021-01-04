@@ -85,7 +85,6 @@ Pid:            982
 VmPeak:            1095752 kB
 Hugepagesize:   2048 kB
 Set Huge Pages: 535
-
 ```
 
 ---
