@@ -15,7 +15,7 @@ A collection of shell scripts for PostgreSQL database administrator (DBA). Teste
 
 ## Installation
 
-Copy the scripts to a separate postgres user directory (for example **~scripts/**) and grant the necessary execution rights:
+Copy the scripts to a separate **postgres** user directory (for example **~scripts/**) and grant the necessary execution rights:
 ```
 $ chmod 700 *.sh
 $ chmod 600 settings.txt
