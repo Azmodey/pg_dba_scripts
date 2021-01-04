@@ -69,7 +69,6 @@ pg_database_activity.sh - Vacuum full command executing. The number of PostgreSQ
 Shows current usage of HugePages and recommended settings for PostgreSQL.
 
 ```
------------------------------------
 Current Huge pages:
 
 AnonHugePages:      8192 kB
@@ -87,7 +86,6 @@ VmPeak:            1095752 kB
 Hugepagesize:   2048 kB
 Set Huge Pages: 535
 
------------------------------------
 ```
 
 ---
