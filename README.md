@@ -58,7 +58,7 @@ Running pgbench, 10 backend connections. WALSync wait and Row Exclusive locks. W
 ![pg_database_activity1](media/dbactivity1.png)
 
 
-Vacuum full command executing with Access Exclusive lock. Replication lag appeared (total_lag 3), archiving are not lagging behind (diff 1). The size of archived logs increased to 609 MB. WalSender process consumes 11.6% CPU, Disk load 14.76 %. The number of PostgreSQL log file entries has automatically decreased.
+Vacuum full command executing with Access Exclusive lock. Replication lag appeared (total_lag 3), archiving are not lagging behind (diff 1). The size of Archive logs increased to 609 MB. WalSender process consumes 11.6% CPU, Disk load 14.76 %. The number of PostgreSQL log file entries has automatically decreased.
 
 ![pg_database_activity2](media/dbactivity2.png)
 
