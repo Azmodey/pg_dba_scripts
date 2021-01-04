@@ -14,19 +14,7 @@ PG_LOG_FILENAME=`ls -t $PG_LOG_DIR/postgresql-*.log | head -n1`	# newest Postgre
 
 # ------------------------------------------------
 
-# Colors
-REDLIGHT='\033[1;31m'
-GREENLIGHT='\033[1;32m'
-YELLOW='\033[1;33m'
-CYAN='\033[0;36m'
-CYANLIGHT='\033[1;36m'
-PURPLE='\033[0;35m'
-NC='\033[0m' # No Color
-
-
-# ------------------------------------------------
-
-# Client connections. Uncomment to show
+# Backend Processes (Client connections). Uncomment to show
 pid_clients=`$PG_BIN/psql -t -c "SELECT pid FROM pg_stat_activity where backend_type='client backend' and pid<>pg_backend_pid();"`
 #echo "PID| Database| Username| Application name| Client address| Backend type| Wait event type| Wait event| Memory (KB)| CPU% " > pg_database_activity_tmp.txt
 
@@ -47,7 +35,7 @@ done
 total_clients_mem_mb=$((total_clients_mem/1024))
 
 
-# Server connections
+# Background Processes (Server connections)
 pid_server=`$PG_BIN/psql -t -c "SELECT pid FROM pg_stat_activity where backend_type<>'client backend' and pid<>pg_backend_pid();"`
 
 echo "PID| Database| Username| Application name| Client address| Backend type| Wait event type| Wait event| Memory (KB)| CPU% " > pg_database_activity_tmp.txt
@@ -71,10 +59,9 @@ done
 total_server_mem_mb=$((total_server_mem/1024))
 
 
-
 # ------------------------------------------------
 
-# Title (1 line)
+# Title (1st line)
 DATE=$(date '+%d.%m.%Y %H:%M:%S')
 HOST=`hostname --short`
 HOSTIP=`hostname -I | xargs`
@@ -94,11 +81,11 @@ else
   STATUS="${PURPLE}[$HOST ($HOSTIP) / PostgreSQL $POSTGRES_VER / Replica]${YELLOW}"
 fi
 
-echo -e "${YELLOW}[$DATE] $STATUS [CPU load (1/5/15 min): $UPTIME] [Disks load: util $IOSTAT_UTIL %, await $IOSTAT_AWAIT ms] ${NC}"
+echo -e "${YELLOW}[$DATE] $STATUS [CPU load (1/5/15 min): $UPTIME] [Disk load: util $IOSTAT_UTIL %, await $IOSTAT_AWAIT ms] ${NC}"
 
 
 
-# Title (2 line). Disk usage & free
+# Title (2nd line). Disk usage & free
 #PG_DATA=/postgres/13/data			# Main data directory
 #PG_ARC=/postgres/13/archive			# Archive logs directory
 
@@ -107,26 +94,26 @@ DIR_ARC_FREE=`df -h $PG_ARC | sed 1d | grep -v used | awk '{ print $4 "\t" }' | 
 DIR_BASE_SIZE=`du -sh $PG_DATA/base | awk '{print $1}'`		# Base folder size
 DIR_WAL_SIZE=`du -sh $PG_DATA/pg_wal | awk '{print $1}'`	# WAL folder size
 DIR_ARC_SIZE=`du -sh $PG_ARC | awk '{print $1}'`		# Archive logs folder size
+SWAP_USED=`free | grep Swap | awk '{ print $3 "\t" }' | tr -d '\t'`
 
-echo -e "${GREENLIGHT}Disk${NC}   | ${GREENLIGHT}PGDATA:${NC} $PG_DATA / base: $DIR_BASE_SIZE / pg_wal: $DIR_WAL_SIZE / ${CYANLIGHT}disk free: $DIR_DATA_FREE${NC} | ${GREENLIGHT}Archive logs:${NC} $PG_ARC / size: $DIR_ARC_SIZE / ${CYANLIGHT}disk free: $DIR_ARC_FREE ${NC}"
+echo -e "${GREENLIGHT}Disk${NC}   | ${GREENLIGHT}PGDATA${NC} ${UNDERLINE}$PG_DATA${NC} / base $DIR_BASE_SIZE / pg_wal $DIR_WAL_SIZE / ${CYANLIGHT}disk free $DIR_DATA_FREE${NC} | ${GREENLIGHT}Archive logs${NC} ${UNDERLINE}$PG_ARC${NC} / size $DIR_ARC_SIZE / ${CYANLIGHT}disk free $DIR_ARC_FREE ${NC}| ${GREENLIGHT}Swap used:${NC} ${CYANLIGHT}$SWAP_USED${NC}"
 
 
 
-
-# Title (3 line). Connections & memory totals
+# Title (3rd line). Connections & memory totals
 total_mem=0
 total_mem=$((total_server_mem+total_clients_mem))
 total_mem_mb=$((total_mem/1024))
 total_count=0
 total_count=$((total_clients_count+total_server_count))
-echo -e "${GREENLIGHT}Memory${NC} | PostgreSQL processes ($total_count) memory consumption: $total_mem_mb MB | ${YELLOW}Clients connections ($total_clients_count) $total_clients_mem_mb MB${NC} | ${YELLOW}Server connections ($total_server_count) $total_server_mem_mb MB${NC}"
+echo -e "${GREENLIGHT}Memory${NC} | PostgreSQL processes ($total_count) memory consumption: $total_mem_mb MB | ${YELLOW}Backend processes ($total_clients_count) $total_clients_mem_mb MB${NC} | ${YELLOW}Background processes ($total_server_count) $total_server_mem_mb MB${NC}"
 echo
 
 
 
 # ------------------------------------------------
 
-# Client connections. Uncomment to show
+# Background Processes (Client connections). Uncomment to show
 # echo
 # echo -e "${GREENLIGHT}Clients connections ($total_clients_count) memory consumption: $total_clients_mem_mb MB${NC}"
 # echo "--------------------------------------------------------------------------------------------------------------------------------------------"
@@ -136,8 +123,8 @@ echo
 
 
 
-# Server connections
-echo -e "${GREENLIGHT}Server connections ($total_server_count) memory consumption: $total_server_mem_mb MB${NC}"
+# Background Processes (Server connections)
+echo -e "${GREENLIGHT}Background processes ($total_server_count) memory consumption: $total_server_mem_mb MB${NC}"
 echo "---------------------------------------------------------------------------------------------------------------------------------------------------------------"
 
 sort -t '|' -k9 -n pg_database_activity_tmp.txt | column -t -s '|' -o ' |'	# sort file by memory column, then show like table
@@ -272,6 +259,8 @@ fi
 
 # show PostgreSQL log
 if [[ $PG_LOG_LINES -gt 0 ]]; then
+
   echo -e "${GREENLIGHT}PostgreSQL log: $PG_LOG_FILENAME${NC}"
   tail --lines=$PG_LOG_LINES $PG_LOG_FILENAME
+
 fi
