@@ -53,7 +53,7 @@ PG_LOG_LINES=15		# PostgreSQL log lines to show. 0 - disable output
 
 **Examples of work:**
 
-Running pgbench, 10 backend connections. WALSync wait, Row Exclusive lock and Replication lag appeared. WalSender process consumes 6.7% CPU. CPU load 4.44 %.
+Running pgbench, 10 backend connections. WALSync wait, Row Exclusive lock and Replication lag appeared. WalSender process consumes 6.7% CPU. Total CPU load 4.44 %.
 
 ![pg_database_activity1](media/dbactivity1.png)
 
