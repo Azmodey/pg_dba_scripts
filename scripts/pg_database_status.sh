@@ -18,3 +18,7 @@ echo
 
 echo "PostgreSQL replication service (receiver). Works on Replica server:"
 ps ax | grep -v grep | grep receiver
+echo
+
+echo "PostgreSQL logical replication service (worker). Works on Replica server:"
+ps ax | grep -v grep | grep "logical replication worker"

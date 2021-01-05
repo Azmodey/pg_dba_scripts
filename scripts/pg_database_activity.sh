@@ -191,14 +191,16 @@ if [[ ${#replication_status} >0 ]]; then
 
   echo -e "${GREENLIGHT}Replication status:${NC}"
   $PG_BIN/psql -c "
-  SELECT client_addr AS client_addr, usename AS username, application_name AS app_name, pid, state, sync_state AS MODE,
-         (pg_wal_lsn_diff(pg_current_wal_lsn(), sent_lsn) / 1024)::int AS sending_lag,   -- sending_lag (network problems)
-         (pg_wal_lsn_diff(sent_lsn, flush_lsn) / 1024)::int AS receiving_lag,            -- receiving_lag
-         (pg_wal_lsn_diff(sent_lsn, write_lsn) / 1024)::int AS WRITE,                    -- disks problems
-         (pg_wal_lsn_diff(write_lsn, flush_lsn) / 1024)::int AS FLUSH,                   -- disks problems
-         (pg_wal_lsn_diff(flush_lsn, replay_lsn) / 1024)::int AS replaying_lag,          -- replaying_lag (disks/CPU problems)
-         (pg_wal_lsn_diff(pg_current_wal_lsn(), replay_lsn))::int / 1024 AS total_lag
-  FROM pg_stat_replication;" | grep -v row
+  SELECT r.client_addr AS client_addr, r.usename AS username, r.application_name AS app_name, r.pid, s.slot_name, s.slot_type, r.state, r.sync_state AS MODE,
+         (pg_wal_lsn_diff(pg_current_wal_lsn(), r.sent_lsn) / 1024)::int AS send_lag,   -- sending_lag (network problems)
+         (pg_wal_lsn_diff(r.sent_lsn, r.flush_lsn) / 1024)::int AS receive_lag,            -- receiving_lag
+         (pg_wal_lsn_diff(r.sent_lsn, r.write_lsn) / 1024)::int AS WRITE,                    -- disks problems
+         (pg_wal_lsn_diff(r.write_lsn, r.flush_lsn) / 1024)::int AS FLUSH,                   -- disks problems
+         (pg_wal_lsn_diff(r.flush_lsn, r.replay_lsn) / 1024)::int AS replay_lag,          -- replaying_lag (disks/CPU problems)
+         (pg_wal_lsn_diff(pg_current_wal_lsn(), r.replay_lsn))::int / 1024 AS total_lag
+  FROM pg_stat_replication r, pg_replication_slots s
+  WHERE r.pid = s.active_pid;" | grep -v row
+
   PG_LOG_LINES=$((PG_LOG_LINES-5))
 
 fi
