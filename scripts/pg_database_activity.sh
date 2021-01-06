@@ -198,8 +198,7 @@ if [[ ${#replication_status} >0 ]]; then
          (pg_wal_lsn_diff(r.write_lsn, r.flush_lsn) / 1024)::int AS FLUSH,                   -- disks problems
          (pg_wal_lsn_diff(r.flush_lsn, r.replay_lsn) / 1024)::int AS replay_lag,          -- replaying_lag (disks/CPU problems)
          (pg_wal_lsn_diff(pg_current_wal_lsn(), r.replay_lsn))::int / 1024 AS total_lag
-  FROM pg_stat_replication r, pg_replication_slots s
-  WHERE r.pid = s.active_pid;" | grep -v row
+  FROM pg_stat_replication r LEFT JOIN pg_replication_slots s ON (r.pid = s.active_pid);" | grep -v row
 
   PG_LOG_LINES=$((PG_LOG_LINES-5))
 
