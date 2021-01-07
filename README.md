@@ -2,8 +2,17 @@
 
 A collection of shell scripts for PostgreSQL database administrator (DBA). Tested on PostgreSQL 12-13 under CentOS 7.
 
-- [scripts/pg_database_activity.sh](#pg_database_activity). PostgreSQL monitoring script, all information is displayed on one page. Displays PostgreSQL version and status (Master / Replica), hostname and IP address, CPU and Disks load. Shows the sizes of the main PostgreSQL directories, archived logs and free disk space, swap usage. It also displays memory consumption by PostgreSQL processes, statistics on databases, waits and locks, archive and replication statuses. When activities occur in PostgreSQL, the progress of operations is displayed: vacuum, vacuum full or cluster, index creation, analyze, pg_basebackup. At the end, the last entries of the PostgreSQL log file are displayed. For ease of perception, information is displayed in color.
-- [scripts/pg_database_activity_refresh.sh](#pg_database_activity). Fast refresh of the **pg_database_activity.sh** script every 5 seconds.
+[scripts/pg_database_activity.sh](#pg_database_activity). PostgreSQL monitoring script, all information is displayed on one page. 
+- Displays PostgreSQL version and status (Master / Replica), hostname and IP address, CPU and Disks load.
+- Shows the sizes of the main PostgreSQL directories, archived logs and free disk space, swap usage.
+- Displays memory consumption by PostgreSQL processes, statistics on databases, waits and locks, archive and replication statuses.
+- When activities occur in PostgreSQL, the progress of operations is displayed: vacuum, vacuum full or cluster, index creation, analyze, pg_basebackup.
+- At the end, the last entries of the PostgreSQL log file are displayed.
+- For ease of perception, information is displayed in color.
+
+[scripts/pg_database_activity_refresh.sh](#pg_database_activity). Fast refresh of the **pg_database_activity.sh** script every 5 seconds.
+
+Small scripts to manage PostgreSQL:
 - [scripts/pg_database_hugepages.sh](#pg_database_hugepages). Shows current usage of HugePages and recommended settings for PostgreSQL.
 - [scripts/pg_database_start.sh](#pg_database_start). Start PostgreSQL, confirmation is required.
 - [scripts/pg_database_stop.sh](#pg_database_stop). Stop PostgreSQL, confirmation is required.
@@ -53,14 +62,14 @@ PG_LOG_LINES=15		# PostgreSQL log lines to show. 0 - disable output
 
 **Examples of work:**
 
-Running pgbench, 10 backend connections. WALSync wait and Row Exclusive locks. WalSender background process consumes 6.7% CPU. Total CPU load 4.44 %.
+Running pgbench, 10 backend connections. WALSync wait and Row Exclusive locks. WalSender background processes consumes 19.3% and 24.2% CPU. Total CPU load 6.34 %.
 
-![pg_database_activity1](media/dbactivity1.png)
+![pg_database_activity1](media/db_activity_pgbench.png)
 
 
-Vacuum full command executing with Access Exclusive lock. Replication lag appeared (total_lag 3), archiving are not lagging behind (diff 1). The size of Archive logs increased to 609 MB. WalSender background process consumes 11.6% CPU, overall Disk load 14.76 %. The number of PostgreSQL log file entries has automatically decreased.
+Vacuum full command executing with Access Exclusive lock. Replication lag appeared (total_lag 2721) on streaming and logical replication, archiving are not lagging behind (arc_diff 1). The size of Archive logs increased to 1.3 GB. WalSender background processes consumes 13.2% and 16.5% CPU, overall Disk load 9.73 %. The number of PostgreSQL log file entries has automatically decreased.
 
-![pg_database_activity2](media/dbactivity2.png)
+![pg_database_activity2](media/db_activity_vacuumfull.png)
 
 
 ---

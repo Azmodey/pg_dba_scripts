@@ -16,18 +16,12 @@ PG_LOG_FILENAME=`ls -t $PG_LOG_DIR/postgresql-*.log | head -n1`	# newest Postgre
 
 # Backend Processes (Client connections). Uncomment to show
 pid_clients=`$PG_BIN/psql -t -c "SELECT pid FROM pg_stat_activity where backend_type='client backend' and pid<>pg_backend_pid();"`
-#echo "PID| Database| Username| Application name| Client address| Backend type| Wait event type| Wait event| Memory (KB)| CPU% " > pg_database_activity_tmp.txt
 
 total_clients_mem=0
 total_clients_count=0
 
 for pids in $pid_clients ; do
         mem=`ps -q $pids -eo rss | sed 1d`
-        cpu=`ps -q $pids -eo pcpu | sed 1d`
-
-#        pid_client_info=`$PG_BIN/psql -t -c "SELECT datname as database, usename as username, application_name, client_addr, backend_type, wait_event_type, wait_event FROM pg_stat_activity where pid=$pids;"`
-#        echo "$pids|$pid_client_info|$mem| $cpu" >> pg_database_activity_tmp.txt
-
         total_clients_mem=$((total_clients_mem+mem))
         ((total_clients_count++))
 done
@@ -47,7 +41,6 @@ for pids in $pid_server ; do
 
         mem=`ps -q $pids -eo rss | sed 1d`
         cpu=`ps -q $pids -eo pcpu | sed 1d`
-        #mem_cpu=`ps -q $pids -eo rss,pcpu | sed 1d | sed 's/  /|/'`
         
         pid_client_info=`$PG_BIN/psql -t -c "SELECT datname as database, usename as username, application_name, client_addr, backend_type, wait_event_type, wait_event FROM pg_stat_activity where pid=$pids;"`
         echo "$pids|$pid_client_info|$mem| $cpu" >> pg_database_activity_tmp.txt
@@ -78,7 +71,7 @@ DB_STATUS=`$PG_BIN/psql -t -c "select pg_is_in_recovery();"`
 if [[ $DB_STATUS == " f" ]]; then
   STATUS="${GREENLIGHT}[$HOST ($HOSTIP) / PostgreSQL $POSTGRES_VER / Master]${YELLOW}"
 else
-  STATUS="${PURPLE}[$HOST ($HOSTIP) / PostgreSQL $POSTGRES_VER / Replica]${YELLOW}"
+  STATUS="${PURPLELIGHT}[$HOST ($HOSTIP) / PostgreSQL $POSTGRES_VER / Replica]${YELLOW}"
 fi
 
 echo -e "${YELLOW}[$DATE] $STATUS [CPU load (1/5/15 min): $UPTIME] [Disk load: util $IOSTAT_UTIL %, await $IOSTAT_AWAIT ms] ${NC}"
@@ -86,9 +79,6 @@ echo -e "${YELLOW}[$DATE] $STATUS [CPU load (1/5/15 min): $UPTIME] [Disk load: u
 
 
 # Title (2nd line). Disk usage & free
-#PG_DATA=/postgres/13/data			# Main data directory
-#PG_ARC=/postgres/13/archive			# Archive logs directory
-
 DIR_DATA_FREE=`df -h $PG_DATA | sed 1d | grep -v used | awk '{ print $4 "\t" }' | tr -d '\t'`	# free disk space for PG_DATA
 DIR_ARC_FREE=`df -h $PG_ARC | sed 1d | grep -v used | awk '{ print $4 "\t" }' | tr -d '\t'`	# free disk space for PG_ARC
 DIR_BASE_SIZE=`du -sh $PG_DATA/base | awk '{print $1}'`		# Base folder size
@@ -112,16 +102,6 @@ echo
 
 
 # ------------------------------------------------
-
-# Background Processes (Client connections). Uncomment to show
-# echo
-# echo -e "${GREENLIGHT}Clients connections ($total_clients_count) memory consumption: $total_clients_mem_mb MB${NC}"
-# echo "--------------------------------------------------------------------------------------------------------------------------------------------"
-# sort -t '|' -k9 -n pg_database_activity_tmp.txt | column -t -s '|' -o ' |'
-# echo "--------------------------------------------------------------------------------------------------------------------------------------------"
-# echo
-
-
 
 # Background Processes (Server connections)
 echo -e "${GREENLIGHT}Background processes ($total_server_count) memory consumption: $total_server_mem_mb MB${NC}"
@@ -169,7 +149,7 @@ if [[ ${#archiving_status} >0 ]]; then
     ('x'||substring(pg_walfile_name(pg_current_wal_lsn()),9,8))::bit(32)::int*256 +
     ('x'||substring(pg_walfile_name(pg_current_wal_lsn()),17))::bit(32)::int -
     ('x'||substring(last_archived_wal,9,8))::bit(32)::int*256 -
-    ('x'||substring(last_archived_wal,17))::bit(32)::int as diff
+    ('x'||substring(last_archived_wal,17))::bit(32)::int as arc_diff
     --TO_CHAR(stats_reset, 'dd.mm.yyyy') as stats_reset
     from pg_stat_archiver;" | grep -v row
   else
@@ -185,11 +165,11 @@ fi
 
 
 
-# Replication status
+# Replication status (Master)
 replication_status=`$PG_BIN/psql -t -c "select * from pg_stat_replication;"`
 if [[ ${#replication_status} >0 ]]; then
 
-  echo -e "${GREENLIGHT}Replication status:${NC}"
+  echo -e "${GREENLIGHT}Replication status (Master):${NC}"
   $PG_BIN/psql -c "
   SELECT r.client_addr AS client_addr, r.usename AS username, r.application_name AS app_name, r.pid, s.slot_name, s.slot_type, r.state, r.sync_state AS MODE,
          (pg_wal_lsn_diff(pg_current_wal_lsn(), r.sent_lsn) / 1024)::int AS send_lag,   -- sending_lag (network problems)
