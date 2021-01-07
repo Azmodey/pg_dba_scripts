@@ -133,26 +133,31 @@ PostgreSQL status. Additionally, PostgreSQL processes and replication services a
 ```
 PostgreSQL processes:
 UID         PID   PPID  C STIME TTY          TIME CMD
-postgres  46315  17270  0 13:27 pts/2    00:00:00                  \_ sleep 5
-postgres  45734      1  0 13:27 ?        00:00:00 /usr/pgsql-12/bin/postgres -D /var/lib/pgsql/12/data
-postgres  45739  45734  0 13:27 ?        00:00:00  \_ postgres: logger   
-postgres  45743  45734  0 13:27 ?        00:00:00  \_ postgres: checkpointer   
-postgres  45744  45734  0 13:27 ?        00:00:00  \_ postgres: background writer   
-postgres  45745  45734  0 13:27 ?        00:00:00  \_ postgres: walwriter   
-postgres  45746  45734  0 13:27 ?        00:00:00  \_ postgres: autovacuum launcher   
-postgres  45747  45734  0 13:27 ?        00:00:00  \_ postgres: archiver   
-postgres  45748  45734  0 13:27 ?        00:00:00  \_ postgres: stats collector   
-postgres  45749  45734  0 13:27 ?        00:00:00  \_ postgres: logical replication launcher   
-postgres  45883  45734  0 13:27 ?        00:00:00  \_ postgres: walsender rep_user 192.168.1.196(34354) streaming 5/1E0000D8
+postgres  16719      1  0 13:00 ?        00:00:04 /usr/pgsql-12/bin/postgres -D /var/lib/pgsql/12/data
+postgres  16724  16719  0 13:00 ?        00:00:00  \_ postgres: logger   
+postgres  16728  16719  0 13:00 ?        00:00:01  \_ postgres: checkpointer   
+postgres  16729  16719  0 13:00 ?        00:00:00  \_ postgres: background writer   
+postgres  16730  16719  0 13:00 ?        00:00:02  \_ postgres: walwriter   
+postgres  16731  16719  0 13:00 ?        00:00:00  \_ postgres: autovacuum launcher   
+postgres  16732  16719  0 13:00 ?        00:00:00  \_ postgres: archiver   last was 0000000600000005000000A7
+postgres  16733  16719  0 13:00 ?        00:00:04  \_ postgres: stats collector   
+postgres  16734  16719  0 13:00 ?        00:00:00  \_ postgres: logical replication launcher   
+postgres  16736  16719  2 13:00 ?        00:00:41  \_ postgres: walsender postgres 192.168.1.198(34354) idle
+postgres  16871  16719  1 13:00 ?        00:00:33  \_ postgres: walsender rep_user 192.168.1.197(34146) streaming 5/A8E437B8
+postgres  23665  16719  0 13:03 ?        00:00:00  \_ postgres: postgres postgres 192.168.1.10(2053) idle
+postgres  23666  16719  0 13:04 ?        00:00:10  \_ postgres: postgres appdb 192.168.1.10(2057) idle
 
 PostgreSQL status:
-pg_ctl: server is running (PID: 45734)
+pg_ctl: server is running (PID: 16719)
 /usr/pgsql-12/bin/postgres "-D" "/var/lib/pgsql/12/data"
 
 PostgreSQL replication service (sender). Works on Master server:
- 45883 ?        Ss     0:00 postgres: walsender rep_user 192.168.1.196(34354) streaming 5/1E0000D8
+ 16736 ?        Ss     0:41 postgres: walsender postgres 192.168.1.198(34354) idle
+ 16871 ?        Ss     0:33 postgres: walsender rep_user 192.168.1.197(34146) streaming 5/A8E437B8
 
 PostgreSQL replication service (receiver). Works on Replica server:
+
+PostgreSQL logical replication service (worker). Works on Replica server:
 ```
 
 ---
