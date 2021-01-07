@@ -12,7 +12,8 @@ A collection of shell scripts for PostgreSQL database administrator (DBA). Teste
 
 [scripts/pg_database_activity_refresh.sh](#pg_database_activity). Fast refresh of the **pg_database_activity.sh** script every 5 seconds.
 
-Small scripts to manage PostgreSQL:
+
+**Small scripts to manage PostgreSQL:**
 - [scripts/pg_database_hugepages.sh](#pg_database_hugepages). Shows current usage of HugePages and recommended settings for PostgreSQL.
 - [scripts/pg_database_start.sh](#pg_database_start). Start PostgreSQL, confirmation is required.
 - [scripts/pg_database_stop.sh](#pg_database_stop). Stop PostgreSQL, confirmation is required.
