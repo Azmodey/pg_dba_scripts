@@ -186,6 +186,41 @@ fi
 
 
 
+# Replication status (Replica)
+if [[ $DB_STATUS != " f" ]]; then
+
+  echo -e "${GREENLIGHT}Replication status (Replica):${NC}"
+  $PG_BIN/psql -c "
+  SELECT sender_host, sender_port, pid, slot_name, status, received_lsn, received_tli,
+       CASE WHEN pg_last_wal_receive_lsn() = pg_last_wal_replay_lsn() THEN 0
+           ELSE EXTRACT (EPOCH FROM now() - pg_last_xact_replay_timestamp())
+       END AS log_delay
+  FROM pg_stat_wal_receiver;" | grep -v row
+
+  PG_LOG_LINES=$((PG_LOG_LINES-5))
+
+fi
+
+
+
+# Logical Replication status (Replica)
+logical_replication=`$PG_BIN/psql -t -c "select * from pg_stat_subscription;"`
+if [[ ${#logical_replication} >0 ]]; then
+
+  echo -e "${GREENLIGHT}Logical Replication status (Replica):${NC}"
+
+  $PG_BIN/psql -c "
+  SELECT subid, subname, pid, relid, received_lsn, TO_CHAR(last_msg_send_time, 'dd.mm.yyyy HH24:MI:SS') as last_msg_send_time, 
+         TO_CHAR(last_msg_receipt_time, 'dd.mm.yyyy HH24:MI:SS') as last_msg_receipt_time, latest_end_lsn, TO_CHAR(latest_end_time, 'dd.mm.yyyy HH24:MI:SS') as latest_end_time, 
+         (pg_wal_lsn_diff(received_lsn, latest_end_lsn) / 1024)::int AS subscription_lag 
+  FROM pg_stat_subscription;" | grep -v row
+
+  PG_LOG_LINES=$((PG_LOG_LINES-5))
+
+fi
+
+
+
 # PostgreSQL system process activity progress
 
 # PostgreSQL 9.6 and higher

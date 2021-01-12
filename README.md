@@ -24,10 +24,18 @@ A collection of shell scripts for PostgreSQL database administrator (DBA). Teste
 
 ## Installation
 
-Copy the scripts to a separate **postgres** user directory (for example **~scripts/**) and grant the necessary execution rights:
+As user **postgres**, download the latest version of the scripts collection (see [Releases](https://github.com/Azmodey/pg_dba_scripts/releases) page):
 ```
-$ chmod 700 *.sh
-$ chmod 600 settings.txt
+# sudo su - postgres
+$ wget https://github.com/Azmodey/pg_dba_scripts/archive/1.1.0.tar.gz
+```
+
+Extract script files to separate directory (for example **~scripts/**) and grant the necessary execution rights:
+```
+$ tar xvzf 1.1.0.tar.gz
+$ mv pg_dba_scripts-1.1.0/scripts ~/scripts
+$ chmod 700 ~/scripts/*.sh
+$ chmod 600 ~/scripts/settings.txt
 ```
 
 
@@ -70,6 +78,16 @@ Running pgbench, 10 backend connections. WALSync wait and Row Exclusive locks. W
 Vacuum full command executing with Access Exclusive lock. Replication lag appeared (total_lag 2721) on streaming and logical replication, archiving are not lagging behind (arc_diff 1). The size of Archive logs increased to 1.3 GB. WalSender background processes consumes 13.2% and 16.5% CPU, overall Disk load 9.73 %. The number of PostgreSQL log file entries has automatically decreased.
 
 ![pg_database_activity2](media/db_activity_vacuumfull.png)
+
+
+Streaming replication to replica server. The server status is highlighted in a separate color, the type of replication (streaming), the slot used (node1_slot) and the lag in replication are shown.
+
+![pg_database_activity3](media/db_activity_repstream.png)
+
+
+Logical replication to the master PostgreSQL server 13.1. Subscription name (appdbsub) and replication lag (subscription_lag) are shown. Logical replication worker consumes 1.3% CPU.
+
+![pg_database_activity4](media/db_activity_replogical.png)
 
 
 ---
@@ -133,27 +151,25 @@ PostgreSQL status. Additionally, PostgreSQL processes and replication services a
 ```
 PostgreSQL processes:
 UID         PID   PPID  C STIME TTY          TIME CMD
-postgres  16719      1  0 13:00 ?        00:00:04 /usr/pgsql-12/bin/postgres -D /var/lib/pgsql/12/data
-postgres  16724  16719  0 13:00 ?        00:00:00  \_ postgres: logger   
-postgres  16728  16719  0 13:00 ?        00:00:01  \_ postgres: checkpointer   
-postgres  16729  16719  0 13:00 ?        00:00:00  \_ postgres: background writer   
-postgres  16730  16719  0 13:00 ?        00:00:02  \_ postgres: walwriter   
-postgres  16731  16719  0 13:00 ?        00:00:00  \_ postgres: autovacuum launcher   
-postgres  16732  16719  0 13:00 ?        00:00:00  \_ postgres: archiver   last was 0000000600000005000000A7
-postgres  16733  16719  0 13:00 ?        00:00:04  \_ postgres: stats collector   
-postgres  16734  16719  0 13:00 ?        00:00:00  \_ postgres: logical replication launcher   
-postgres  16736  16719  2 13:00 ?        00:00:41  \_ postgres: walsender postgres 192.168.1.198(34354) idle
-postgres  16871  16719  1 13:00 ?        00:00:33  \_ postgres: walsender rep_user 192.168.1.197(34146) streaming 5/A8E437B8
-postgres  23665  16719  0 13:03 ?        00:00:00  \_ postgres: postgres postgres 192.168.1.10(2053) idle
-postgres  23666  16719  0 13:04 ?        00:00:10  \_ postgres: postgres appdb 192.168.1.10(2057) idle
+postgres    985      1  0 11:05 ?        00:00:01 /usr/pgsql-12/bin/postmaster -D /var/lib/pgsql/12/data/
+postgres   1121    985  0 11:05 ?        00:00:00  \_ postgres: logger   
+postgres   1138    985  0 11:05 ?        00:00:00  \_ postgres: checkpointer   
+postgres   1139    985  0 11:05 ?        00:00:00  \_ postgres: background writer   
+postgres   1140    985  0 11:05 ?        00:00:00  \_ postgres: walwriter   
+postgres   1141    985  0 11:05 ?        00:00:00  \_ postgres: autovacuum launcher   
+postgres   1142    985  0 11:05 ?        00:00:00  \_ postgres: archiver   last was 0000000600000005000000E9
+postgres   1143    985  0 11:05 ?        00:00:00  \_ postgres: stats collector   
+postgres   1146    985  0 11:05 ?        00:00:00  \_ postgres: logical replication launcher   
+postgres   1257    985  1 11:05 ?        00:00:40  \_ postgres: walsender postgres 192.168.1.198(59920) idle
+postgres   1258    985  0 11:05 ?        00:00:33  \_ postgres: walsender rep_user 192.168.1.197(33130) streaming 5/EA8884B0
 
 PostgreSQL status:
-pg_ctl: server is running (PID: 16719)
-/usr/pgsql-12/bin/postgres "-D" "/var/lib/pgsql/12/data"
+pg_ctl: server is running (PID: 985)
+/usr/pgsql-12/bin/postgres "-D" "/var/lib/pgsql/12/data/"
 
 PostgreSQL replication service (sender). Works on Master server:
- 16736 ?        Ss     0:41 postgres: walsender postgres 192.168.1.198(34354) idle
- 16871 ?        Ss     0:33 postgres: walsender rep_user 192.168.1.197(34146) streaming 5/A8E437B8
+postgres   1257    985  1 11:05 ?        00:00:40 postgres: walsender postgres 192.168.1.198(59920) idle
+postgres   1258    985  0 11:05 ?        00:00:33 postgres: walsender rep_user 192.168.1.197(33130) streaming 5/EA8884B0
 
 PostgreSQL replication service (receiver). Works on Replica server:
 
