@@ -27,13 +27,13 @@ A collection of shell scripts for PostgreSQL database administrator (DBA). Teste
 As user **postgres**, download the latest version of the scripts collection (see [Releases](https://github.com/Azmodey/pg_dba_scripts/releases) page):
 ```
 # sudo su - postgres
-$ wget https://github.com/Azmodey/pg_dba_scripts/archive/1.1.0.tar.gz
+$ wget https://github.com/Azmodey/pg_dba_scripts/archive/1.2.0.tar.gz
 ```
 
 Extract script files to separate directory (for example **~scripts/**) and grant the necessary execution rights:
 ```
-$ tar xvzf 1.1.0.tar.gz
-$ mv pg_dba_scripts-1.1.0/scripts ~/scripts
+$ tar xvzf 1.2.0.tar.gz
+$ mv pg_dba_scripts-1.2.0/scripts ~/scripts
 $ chmod 700 ~/scripts/*.sh
 $ chmod 600 ~/scripts/settings.txt
 ```

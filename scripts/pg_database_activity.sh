@@ -7,14 +7,12 @@ source ./settings.txt
 # Settings
 PG_LOG_LINES=15							# PostgreSQL log lines to show. 0 - disable output
 
-#PG_LOG_DATE=$(date +%Y-%m)					# log_filename = 'postgresql-%Y-%m.log'	# log file name pattern
-#PG_LOG_FILENAME=$PG_LOG_DIR/postgresql-$PG_LOG_DATE.log	# log_filename = 'postgresql-%Y-%m.log'	# log file name pattern
 PG_LOG_FILENAME=`ls -t $PG_LOG_DIR/postgresql-*.log | head -n1`	# newest PostgreSQL log file in log_directory
 
 
 # ------------------------------------------------
 
-# Backend Processes (Client connections). Uncomment to show
+# Backend Processes (Client connections)
 pid_clients=`$PG_BIN/psql -t -c "SELECT pid FROM pg_stat_activity where backend_type='client backend' and pid<>pg_backend_pid();"`
 
 total_clients_mem=0
@@ -117,7 +115,7 @@ rm pg_database_activity_tmp.txt
 
 # Database statistics
 echo -e "${GREENLIGHT}Database statistics:${NC}"
-$PG_BIN/psql -c "select p.datid, p.datname, pg_size_pretty(pg_database_size(p.datname)) as size, p.numbackends as connections, p.xact_commit as commit, p.xact_rollback as rollback, p.blks_read, p.blks_hit, p.temp_files, round(p.temp_bytes/1024/1024) as temp_mb, p.deadlocks, p.checksum_failures as chksum_fail, TO_CHAR(p.checksum_last_failure, 'dd.mm.yyyy HH24:MI:SS') as chksum_f_date, TO_CHAR(p.stats_reset, 'dd.mm.yyyy') as stat_reset from pg_stat_database p, pg_database d where p.datid=d.oid and d.datistemplate = false order by p.datid;" | grep -v row
+$PG_BIN/psql -c "select p.datid, p.datname, pg_size_pretty(pg_database_size(p.datname)) as size, p.numbackends as connections, p.xact_commit as commit, p.xact_rollback as rollback, p.blks_read, p.blks_hit, p.temp_files, round(p.temp_bytes/1024/1024) as temp_mb, p.deadlocks, p.checksum_failures as chksum_fail, TO_CHAR(p.checksum_last_failure, 'dd.mm.yyyy HH24:MI:SS') as chksum_f_date, TO_CHAR(p.stats_reset, 'dd.mm.yyyy') as stat_reset from pg_stat_database p, pg_database d where p.datid=d.oid and d.datistemplate = false order by p.datid;" | grep -v ' row)' | grep -v ' rows)'
 
 
 
@@ -125,10 +123,10 @@ $PG_BIN/psql -c "select p.datid, p.datname, pg_size_pretty(pg_database_size(p.da
 echo -e "${GREENLIGHT}Wait events:                                                 ${YELLOW}Lock events:${NC}"
 
 # Wait events
-$PG_BIN/psql -c "select wait_event_type, wait_event, count(*) as connections from pg_stat_activity where wait_event_type is not null and wait_event_type <> 'Activity' group by wait_event_type, wait_event order by 3 desc;" | grep -v row > pg_database_activity_wait.txt
+$PG_BIN/psql -c "select wait_event_type, wait_event, count(*) as connections from pg_stat_activity where wait_event_type is not null and wait_event_type <> 'Activity' group by wait_event_type, wait_event order by 3 desc;" | grep -v ' row)' | grep -v ' rows)' > pg_database_activity_wait.txt
 
 # Lock events
-$PG_BIN/psql -c "select d.datname, l.locktype, l.mode, count(*) from pg_locks l, pg_database d where l.database=d.oid and l.database is not null and l.granted = true group by d.datname, l.locktype, l.mode order by 4 desc;" | grep -v row > pg_database_activity_locks.txt
+$PG_BIN/psql -c "select d.datname, l.locktype, l.mode, count(*) from pg_locks l, pg_database d where l.database=d.oid and l.database is not null and l.granted = true group by d.datname, l.locktype, l.mode order by 4 desc;" | grep -v ' row)' | grep -v ' rows)' > pg_database_activity_locks.txt
 
 paste pg_database_activity_wait.txt pg_database_activity_locks.txt | awk -F'\t' '{printf("%-60s %s\n",$1,$2)}'
 rm pg_database_activity_wait.txt
@@ -151,12 +149,12 @@ if [[ ${#archiving_status} >0 ]]; then
     ('x'||substring(last_archived_wal,9,8))::bit(32)::int*256 -
     ('x'||substring(last_archived_wal,17))::bit(32)::int as arc_diff
     --TO_CHAR(stats_reset, 'dd.mm.yyyy') as stats_reset
-    from pg_stat_archiver;" | grep -v row
+    from pg_stat_archiver;" | grep -v ' row)' | grep -v ' rows)'
   else
     # replica
     $PG_BIN/psql -c "
     select archived_count, last_archived_wal, TO_CHAR(last_archived_time, 'dd.mm.yyyy HH24:MI:SS') as last_archived_time, failed_count, last_failed_wal, TO_CHAR(last_failed_time, 'dd.mm.yyyy HH24:MI:SS') as last_failed_time, TO_CHAR(stats_reset, 'dd.mm.yyyy HH24:MI:SS') as stats_reset
-    from pg_stat_archiver;" | grep -v row
+    from pg_stat_archiver;" | grep -v ' row)' | grep -v ' rows)'
   fi
 
   PG_LOG_LINES=$((PG_LOG_LINES-5))
@@ -178,7 +176,7 @@ if [[ ${#replication_status} >0 ]]; then
          (pg_wal_lsn_diff(r.write_lsn, r.flush_lsn) / 1024)::int AS FLUSH,                   -- disks problems
          (pg_wal_lsn_diff(r.flush_lsn, r.replay_lsn) / 1024)::int AS replay_lag,          -- replaying_lag (disks/CPU problems)
          (pg_wal_lsn_diff(pg_current_wal_lsn(), r.replay_lsn))::int / 1024 AS total_lag
-  FROM pg_stat_replication r LEFT JOIN pg_replication_slots s ON (r.pid = s.active_pid);" | grep -v row
+  FROM pg_stat_replication r LEFT JOIN pg_replication_slots s ON (r.pid = s.active_pid);" | grep -v ' row)' | grep -v ' rows)'
 
   PG_LOG_LINES=$((PG_LOG_LINES-5))
 
@@ -195,7 +193,7 @@ if [[ $DB_STATUS != " f" ]]; then
        CASE WHEN pg_last_wal_receive_lsn() = pg_last_wal_replay_lsn() THEN 0
            ELSE EXTRACT (EPOCH FROM now() - pg_last_xact_replay_timestamp())
        END AS log_delay
-  FROM pg_stat_wal_receiver;" | grep -v row
+  FROM pg_stat_wal_receiver;" | grep -v ' row)' | grep -v ' rows)'
 
   PG_LOG_LINES=$((PG_LOG_LINES-5))
 
@@ -213,7 +211,7 @@ if [[ ${#logical_replication} >0 ]]; then
   SELECT subid, subname, pid, relid, received_lsn, TO_CHAR(last_msg_send_time, 'dd.mm.yyyy HH24:MI:SS') as last_msg_send_time, 
          TO_CHAR(last_msg_receipt_time, 'dd.mm.yyyy HH24:MI:SS') as last_msg_receipt_time, latest_end_lsn, TO_CHAR(latest_end_time, 'dd.mm.yyyy HH24:MI:SS') as latest_end_time, 
          (pg_wal_lsn_diff(received_lsn, latest_end_lsn) / 1024)::int AS subscription_lag 
-  FROM pg_stat_subscription;" | grep -v row
+  FROM pg_stat_subscription;" | grep -v ' row)' | grep -v ' rows)'
 
   PG_LOG_LINES=$((PG_LOG_LINES-5))
 
@@ -227,7 +225,7 @@ fi
 progress_vacuum=`$PG_BIN/psql -t -c "select * from pg_stat_progress_vacuum;"`
 if [[ ${#progress_vacuum} >0 ]]; then
   echo -e "${YELLOW}VACUUM progress:${NC}"
-  $PG_BIN/psql -c "select a.query, p.datname, p.phase, p.heap_blks_total, p.heap_blks_scanned, p.heap_blks_vacuumed, p.index_vacuum_count, p.max_dead_tuples, p.num_dead_tuples from pg_stat_progress_vacuum p, pg_stat_activity a WHERE p.pid = a.pid;" | grep -v row
+  $PG_BIN/psql -c "select a.query, p.datname, p.phase, p.heap_blks_total, p.heap_blks_scanned, p.heap_blks_vacuumed, p.index_vacuum_count, p.max_dead_tuples, p.num_dead_tuples from pg_stat_progress_vacuum p, pg_stat_activity a WHERE p.pid = a.pid;" | grep -v ' row)' | grep -v ' rows)'
   PG_LOG_LINES=$((PG_LOG_LINES-5))
 fi
 
@@ -238,14 +236,14 @@ if [[ $POSTGRES_VER_GLOB -ge 12 ]]; then	# >= 12
   progress_create_index=`$PG_BIN/psql -t -c "select * from pg_stat_progress_create_index;"`
   if [[ ${#progress_create_index} >0 ]]; then
     echo -e "${YELLOW}CREATE INDEX progress:${NC}"
-    $PG_BIN/psql -c "SELECT a.query, p.datname, p.command, p.phase, p.lockers_total, p.lockers_done, p.blocks_total, p.blocks_done, p.tuples_total, p.tuples_done FROM pg_stat_progress_create_index p, pg_stat_activity a WHERE p.pid = a.pid;" | grep -v row
+    $PG_BIN/psql -c "SELECT a.query, p.datname, p.command, p.phase, p.lockers_total, p.lockers_done, p.blocks_total, p.blocks_done, p.tuples_total, p.tuples_done FROM pg_stat_progress_create_index p, pg_stat_activity a WHERE p.pid = a.pid;" | grep -v ' row)' | grep -v ' rows)'
     PG_LOG_LINES=$((PG_LOG_LINES-5))
   fi
 
   progress_cluster=`$PG_BIN/psql -t -c "select * from pg_stat_progress_cluster;"`
   if [[ ${#progress_cluster} >0 ]]; then
     echo -e "${YELLOW}VACUUM FULL or CLUSTER progress:${NC}"
-    $PG_BIN/psql -c "select a.query, p.datname, p.command, p.phase, p.heap_tuples_scanned, p.heap_tuples_written, p.index_rebuild_count from pg_stat_progress_cluster p, pg_stat_activity a WHERE p.pid = a.pid;" | grep -v row
+    $PG_BIN/psql -c "select a.query, p.datname, p.command, p.phase, p.heap_tuples_scanned, p.heap_tuples_written, p.index_rebuild_count from pg_stat_progress_cluster p, pg_stat_activity a WHERE p.pid = a.pid;" | grep -v ' row)' | grep -v ' rows)'
     PG_LOG_LINES=$((PG_LOG_LINES-5))
   fi
 
@@ -258,14 +256,14 @@ if [[ $POSTGRES_VER_GLOB -ge 13 ]]; then	# >= 13
   progress_analyze=`$PG_BIN/psql -t -c "select * from pg_stat_progress_analyze;"`
   if [[ ${#progress_analyze} >0 ]]; then
     echo -e "${YELLOW}ANALYZE progress:${NC}"
-    $PG_BIN/psql -c "SELECT a.query, p.datname, p.phase, p.sample_blks_total, p.sample_blks_scanned, p.ext_stats_total, p.ext_stats_computed, p.child_tables_total, p.child_tables_done FROM pg_stat_progress_analyze p, pg_stat_activity a WHERE p.pid = a.pid;" | grep -v row
+    $PG_BIN/psql -c "SELECT a.query, p.datname, p.phase, p.sample_blks_total, p.sample_blks_scanned, p.ext_stats_total, p.ext_stats_computed, p.child_tables_total, p.child_tables_done FROM pg_stat_progress_analyze p, pg_stat_activity a WHERE p.pid = a.pid;" | grep -v ' row)' | grep -v ' rows)'
     PG_LOG_LINES=$((PG_LOG_LINES-5))
   fi
 
   progress_basebackup=`$PG_BIN/psql -t -c "select * from pg_stat_progress_basebackup;"`
   if [[ ${#progress_basebackup} >0 ]]; then
     echo -e "${YELLOW}PG_BASEBACKUP progress:${NC}"
-    $PG_BIN/psql -c "SELECT a.query, p.pid, p.phase, p.backup_total, p.backup_streamed, p.tablespaces_total, p.tablespaces_streamed FROM pg_stat_progress_basebackup p, pg_stat_activity a WHERE p.pid = a.pid;" | grep -v row
+    $PG_BIN/psql -c "SELECT a.query, p.pid, p.phase, p.backup_total, p.backup_streamed, p.tablespaces_total, p.tablespaces_streamed FROM pg_stat_progress_basebackup p, pg_stat_activity a WHERE p.pid = a.pid;" | grep -v ' row)' | grep -v ' rows)'
     PG_LOG_LINES=$((PG_LOG_LINES-5))
   fi
 
