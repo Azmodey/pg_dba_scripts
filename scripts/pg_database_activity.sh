@@ -5,7 +5,7 @@
 source ./settings.txt
 
 # Settings
-PG_LOG_LINES=15							# PostgreSQL log lines to show. 0 - disable output
+PG_LOG_LINES=15							# Number of PostgreSQL log lines to display. 0 - disable output
 
 PG_LOG_FILENAME=`ls -t $PG_LOG_DIR/postgresql-*.log | head -n1`	# newest PostgreSQL log file in log_directory
 

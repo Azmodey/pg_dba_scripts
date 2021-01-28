@@ -12,6 +12,17 @@ A collection of shell scripts for PostgreSQL database administrator (DBA). Teste
 
 [scripts/pg_database_activity_refresh.sh](#pg_database_activity). Fast refresh of the **pg_database_activity.sh** script every 5 seconds.
 
+
+#### [scripts/pg_database_information.sh](#pg_database_information). PostgreSQL information script, single tape with the current status of a group of PostgreSQL servers.
+The script allows you to quickly find out what the servers are doing and see the exact data for logical replication and external tables. 
+- Displays server time and lag time, hostname and IP address, PostgreSQL version and status (Master / Replica), data checksums.
+- Statistics are also displayed on databases, waits and locks, archive and replication statuses.
+- For logical replication, information about publications and subscriptions in the target databases is displayed.
+- Displays information about external servers, associated with them by users and tables.
+- Blocked sessions and a tree with their locks are displayed, as well as a list of long-running requests.
+- When activities occur in PostgreSQL, the progress of operations is displayed: vacuum, vacuum full or cluster, index creation, analyze, pg_basebackup.
+
+
 #### Small scripts to manage PostgreSQL:
 - [scripts/pg_database_hugepages.sh](#pg_database_hugepages). Shows current usage of HugePages and recommended settings for PostgreSQL.
 - [scripts/pg_database_start.sh](#pg_database_start). Start PostgreSQL, confirmation is required.
@@ -27,13 +38,13 @@ A collection of shell scripts for PostgreSQL database administrator (DBA). Teste
 As user **postgres**, download the latest version of the scripts collection (see [Releases](https://github.com/Azmodey/pg_dba_scripts/releases) page):
 ```
 # sudo su - postgres
-$ wget https://github.com/Azmodey/pg_dba_scripts/archive/1.2.0.tar.gz
+$ wget https://github.com/Azmodey/pg_dba_scripts/archive/1.5.0.tar.gz
 ```
 
 Extract script files to separate directory (for example **~scripts/**) and grant the necessary execution rights:
 ```
-$ tar xvzf 1.2.0.tar.gz
-$ mv pg_dba_scripts-1.2.0/scripts ~/scripts
+$ tar xvzf 1.5.0.tar.gz
+$ mv pg_dba_scripts-1.5.0/scripts ~/scripts
 $ chmod 700 ~/scripts/*.sh
 $ chmod 600 ~/scripts/settings.txt
 ```
@@ -65,7 +76,7 @@ PostgreSQL monitoring script, all information is displayed on one page. Displays
 
 Change the value of the PG_LOG_LINES parameter in the script, which is responsible for displaying the number of last lines of the PosgtreSQL log file.
 ```
-PG_LOG_LINES=15		# PostgreSQL log lines to show. 0 - disable output
+PG_LOG_LINES=15		# Number of PostgreSQL log lines to display. 0 - disable output
 ```
 
 #### Examples of work:
@@ -91,11 +102,68 @@ Logical replication to the master PostgreSQL server 13.1. Subscription name (app
 
 
 ---
+### pg_database_information
+
+A script that provides a single tape with the current status of a group of PostgreSQL servers, allowing you to quickly find out what the servers are doing and see the exact data for logical replication and external tables. Server time and lag time, hostname and IP address, PostgreSQL version and status (Master / Replica), data checksums are displayed. It also displays statistics on databases, waits and locks, archive and replication statuses. For logical replication, information about publications and subscriptions in the target databases is displayed. Displays information about external servers, associated users and tables. Blocked sessions and a tree with their locks are displayed, as well as a list of long-running requests. When activities occur in PostgreSQL, the progress of operations is displayed: vacuum, vacuum full or cluster, index creation, analyze, pg_basebackup.
+
+#### Setup:
+
+Modify the list of current PostgreSQL hosts in the script, or use the setting only for the local server (localhost). 
+```
+# Array of PosgtreSQL servers
+declare -a servers_list=("localhost")									# Local server
+#declare -a servers_list=("pg_server_1" "pg_server_2" "pg_server_3")	# Servers list, hostnames. Format: "pg_server_1" "pg_server_2" ...
+```
+
+#### Requirements:
+
+- All PostgreSQL hosts must be network accessible. Check with **ping** command (using three servers as an example):
+```
+$ ping pg_server_1
+$ ping pg_server_2
+$ ping pg_server_3
+```
+
+- The PostgreSQL server must be allowed passwordless user **postgres** access. To do this, create a **~/.pgpass** file from the **postgres** user with the following content, substituting the current password for "password":
+```
+*:*:*:postgres:password
+```
+
+- Grant the necessary rights to **~/.pgpass** file
+```
+$ chmod 600 ~/.pgpass
+```
+
+- Checking the connection to databases of other PostgreSQL servers:
+```
+$ psql -h pg_server_1
+$ psql -h pg_server_2
+$ psql -h pg_server_3 
+```
+
+#### Example:
+
+A cluster of three PostgreSQL servers. The first server (c7postgresql) runs PostgreSQL 12.5 and is the master for the second server. Logical replication is carried out from it, the publication of appdbpub in the appdb database with a dedicated slot is created. It also has access to external data of the third server, foreign server to host 192.168.1.198, appdb2 database, logs_fs.log_timeline table under the postgres user. The session blocking tree is visible when trying to update the same data. The second server (c7postgresql-1) is a replica, streaming replication from the first server is performed to it. There is a time lag of 2 seconds compared to the first server. The third server (c7postgresql-2) runs on PostgreSQL 13.1 and receives logical replication of the appdb database from the first server, the appdbsub subscription is configured. Two sessions with long running queries are displayed.
+
+![pg_database_information1](media/db_information.png)
+
+
+---
 ### pg_database_hugepages
 
-Shows current usage of HugePages and recommended settings for PostgreSQL.
+Shows Transparent Huge Pages (THP) status, current usage of HugePages and recommended settings for PostgreSQL.
 
 ```
+Transparent Huge Pages (THP):
+ On: [always] madvise never
+Off: always madvise [never]
+
+Status:
+always madvise [never]
+
+Tip: disable it
+
+-----------------------------------
 Current Huge pages:
 
 AnonHugePages:      8192 kB

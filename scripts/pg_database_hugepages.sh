@@ -1,6 +1,18 @@
 #!/bin/bash
 
 # Get Number of Required HugePages
+# https://www.percona.com/blog/2018/08/29/tune-linux-kernel-parameters-for-postgresql-optimization/
+
+echo "-----------------------------------"
+echo "Transparent Huge Pages (THP):"
+echo " On: [always] madvise never"
+echo "Off: always madvise [never]"
+echo
+echo "Status:"
+cat /sys/kernel/mm/transparent_hugepage/enabled
+echo
+echo "Tip: disable it"
+echo
 
 echo "-----------------------------------"
 echo "Current Huge pages:"
