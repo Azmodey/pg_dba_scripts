@@ -111,7 +111,7 @@ A script that provides a single tape with the current status of a group of Postg
 Modify the list of current PostgreSQL hosts in the script, or use the setting only for the local server (localhost). 
 ```
 # Array of PosgtreSQL servers
-declare -a servers_list=("localhost")									# Local server
+declare -a servers_list=("localhost")					# Local server
 #declare -a servers_list=("pg_server_1" "pg_server_2" "pg_server_3")	# Servers list, hostnames. Format: "pg_server_1" "pg_server_2" ...
 ```
 
