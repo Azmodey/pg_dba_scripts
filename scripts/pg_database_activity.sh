@@ -114,8 +114,15 @@ rm pg_database_activity_tmp.txt
 
 
 # Database statistics
-echo -e "${GREENLIGHT}Database statistics:${NC}"
-$PG_BIN/psql -c "select p.datid, p.datname, pg_size_pretty(pg_database_size(p.datname)) as size, p.numbackends as connections, p.xact_commit as commit, p.xact_rollback as rollback, p.blks_read, p.blks_hit, p.temp_files, round(p.temp_bytes/1024/1024) as temp_mb, p.deadlocks, p.checksum_failures as chksum_fail, TO_CHAR(p.checksum_last_failure, 'dd.mm.yyyy HH24:MI:SS') as chksum_f_date, TO_CHAR(p.stats_reset, 'dd.mm.yyyy') as stat_reset from pg_stat_database p, pg_database d where p.datid=d.oid and d.datistemplate = false order by p.datid;" | grep -v ' row)' | grep -v ' rows)'
+if [[ $POSTGRES_VER_GLOB -ge 10 && $POSTGRES_VER_GLOB -le 11 ]]; then	# >= 10 and <= 11
+  echo -e "${GREENLIGHT}Database statistics:${NC}"
+  $PG_BIN/psql -c "select p.datid, p.datname, pg_size_pretty(pg_database_size(p.datname)) as size, p.numbackends as connections, p.xact_commit as commit, p.xact_rollback as rollback, p.blks_read, p.blks_hit, p.temp_files, round(p.temp_bytes/1024/1024) as temp_mb, p.deadlocks, TO_CHAR(p.stats_reset, 'dd.mm.yyyy') as stat_reset from pg_stat_database p, pg_database d where p.datid=d.oid and d.datistemplate = false order by p.datid;" | grep -v ' row)' | grep -v ' rows)'
+fi
+
+if [[ $POSTGRES_VER_GLOB -ge 12 ]]; then	# >= 12
+  echo -e "${GREENLIGHT}Database statistics:${NC}"
+  $PG_BIN/psql -c "select p.datid, p.datname, pg_size_pretty(pg_database_size(p.datname)) as size, p.numbackends as connections, p.xact_commit as commit, p.xact_rollback as rollback, p.blks_read, p.blks_hit, p.temp_files, round(p.temp_bytes/1024/1024) as temp_mb, p.deadlocks, p.checksum_failures as chksum_fail, TO_CHAR(p.checksum_last_failure, 'dd.mm.yyyy HH24:MI:SS') as chksum_f_date, TO_CHAR(p.stats_reset, 'dd.mm.yyyy') as stat_reset from pg_stat_database p, pg_database d where p.datid=d.oid and d.datistemplate = false order by p.datid;" | grep -v ' row)' | grep -v ' rows)'
+fi
 
 
 

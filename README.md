@@ -1,6 +1,6 @@
 ## pg_dba_scripts - PostgreSQL DBA scripts
 
-A collection of shell scripts for PostgreSQL database administrator (DBA). Tested on PostgreSQL 12-13 under CentOS 7.
+A collection of shell scripts for PostgreSQL database administrator (DBA). Tested on PostgreSQL versions 10, 11, 12, 13 under CentOS 7.
 
 #### [scripts/pg_database_activity.sh](#pg_database_activity). PostgreSQL monitoring script, all information is displayed on one page. 
 - Displays PostgreSQL version and status (Master / Replica), hostname and IP address, CPU and Disks load.
@@ -38,13 +38,13 @@ The script allows you to quickly find out what the servers are doing and see the
 As user **postgres**, download the latest version of the scripts collection (see [Releases](https://github.com/Azmodey/pg_dba_scripts/releases) page):
 ```
 # sudo su - postgres
-$ wget https://github.com/Azmodey/pg_dba_scripts/archive/1.5.0.tar.gz
+$ wget https://github.com/Azmodey/pg_dba_scripts/archive/1.6.0.tar.gz
 ```
 
 Extract script files to separate directory (for example **~scripts/**) and grant the necessary execution rights:
 ```
-$ tar xvzf 1.5.0.tar.gz
-$ mv pg_dba_scripts-1.5.0/scripts ~/scripts
+$ tar xvzf 1.6.0.tar.gz
+$ mv pg_dba_scripts-1.6.0/scripts ~/scripts
 $ chmod 700 ~/scripts/*.sh
 $ chmod 600 ~/scripts/settings.txt
 ```
@@ -54,17 +54,29 @@ $ chmod 600 ~/scripts/settings.txt
 
 Modify file **settings.txt**. Uncomment and correct the entries for your current PostgreSQL version.
 ```
+# PostgreSQL 13
+#PG_BIN=/usr/pgsql-13/bin			# Executables directory
+#PG_DATA=/var/lib/pgsql/13/data			# Main data directory
+#PG_ARC=/var/lib/pgsql/13/archive		# Archive logs directory
+#PG_LOG_DIR=/var/lib/pgsql/13/data/log		# Directory for log files
+
 # PostgreSQL 12
 #PG_BIN=/usr/pgsql-12/bin			# Executables directory
 #PG_DATA=/var/lib/pgsql/12/data			# Main data directory
 #PG_ARC=/var/lib/pgsql/12/archive		# Archive logs directory
 #PG_LOG_DIR=/var/lib/pgsql/12/data/log		# Directory for log files
 
-# PostgreSQL 13
-#PG_BIN=/usr/pgsql-13/bin			# Executables directory
-#PG_DATA=/var/lib/pgsql/13/data			# Main data directory
-#PG_ARC=/var/lib/pgsql/13/archive		# Archive logs directory
-#PG_LOG_DIR=/var/lib/pgsql/13/data/log		# Directory for log files
+# PostgreSQL 11
+#PG_BIN=/usr/pgsql-11/bin			# Executables directory
+#PG_DATA=/var/lib/pgsql/11/data			# Main data directory
+#PG_ARC=/var/lib/pgsql/11/archive		# Archive logs directory
+#PG_LOG_DIR=/var/lib/pgsql/11/data/log		# Directory for log files
+
+# PostgreSQL 10
+#PG_BIN=/usr/pgsql-10/bin			# Executables directory
+#PG_DATA=/var/lib/pgsql/10/data			# Main data directory
+#PG_ARC=/var/lib/pgsql/10/archive		# Archive logs directory
+#PG_LOG_DIR=/var/lib/pgsql/10/data/log		# Directory for log files
 ```
 
 ---
@@ -219,29 +231,38 @@ PostgreSQL status. Additionally, PostgreSQL processes and replication services a
 ```
 PostgreSQL processes:
 UID         PID   PPID  C STIME TTY          TIME CMD
-postgres    985      1  0 11:05 ?        00:00:01 /usr/pgsql-12/bin/postmaster -D /var/lib/pgsql/12/data/
-postgres   1121    985  0 11:05 ?        00:00:00  \_ postgres: logger   
-postgres   1138    985  0 11:05 ?        00:00:00  \_ postgres: checkpointer   
-postgres   1139    985  0 11:05 ?        00:00:00  \_ postgres: background writer   
-postgres   1140    985  0 11:05 ?        00:00:00  \_ postgres: walwriter   
-postgres   1141    985  0 11:05 ?        00:00:00  \_ postgres: autovacuum launcher   
-postgres   1142    985  0 11:05 ?        00:00:00  \_ postgres: archiver   last was 0000000600000005000000E9
-postgres   1143    985  0 11:05 ?        00:00:00  \_ postgres: stats collector   
-postgres   1146    985  0 11:05 ?        00:00:00  \_ postgres: logical replication launcher   
-postgres   1257    985  1 11:05 ?        00:00:40  \_ postgres: walsender postgres 192.168.1.198(59920) idle
-postgres   1258    985  0 11:05 ?        00:00:33  \_ postgres: walsender rep_user 192.168.1.197(33130) streaming 5/EA8884B0
+postgres   1030      1  0 17:29 ?        00:00:01 /usr/pgsql-12/bin/postmaster -D /var/lib/pgsql/12/data/
+postgres   1101   1030  0 17:29 ?        00:00:00  \_ postgres: logger   
+postgres   1105   1030  0 17:29 ?        00:00:00  \_ postgres: checkpointer   
+postgres   1106   1030  0 17:29 ?        00:00:00  \_ postgres: background writer   
+postgres   1107   1030  0 17:29 ?        00:00:00  \_ postgres: walwriter   
+postgres   1108   1030  0 17:29 ?        00:00:00  \_ postgres: autovacuum launcher   
+postgres   1109   1030  0 17:29 ?        00:00:00  \_ postgres: archiver   
+postgres   1110   1030  0 17:29 ?        00:00:00  \_ postgres: stats collector   
+postgres   1111   1030  0 17:29 ?        00:00:00  \_ postgres: logical replication launcher   
+postgres   1375   1030  0 17:30 ?        00:00:00  \_ postgres: walsender rep_user 192.168.1.197(49190) streaming 6/67241080
+postgres  10636   1030  0 18:05 ?        00:00:00  \_ postgres: walsender postgres 192.168.1.198(53956) idle
+
+PostgreSQL network connection:
+(Not all processes could be identified, non-owned process info
+ will not be shown, you would have to be root to see it all.)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name    
+tcp        0      0 0.0.0.0:5432            0.0.0.0:*               LISTEN      1030/postmaster     
 
 PostgreSQL status:
-pg_ctl: server is running (PID: 985)
+pg_ctl: server is running (PID: 1030)
 /usr/pgsql-12/bin/postgres "-D" "/var/lib/pgsql/12/data/"
 
 PostgreSQL replication service (sender). Works on Master server:
-postgres   1257    985  1 11:05 ?        00:00:40 postgres: walsender postgres 192.168.1.198(59920) idle
-postgres   1258    985  0 11:05 ?        00:00:33 postgres: walsender rep_user 192.168.1.197(33130) streaming 5/EA8884B0
+UID         PID   PPID  C STIME TTY          TIME CMD
+postgres   1375   1030  0 17:30 ?        00:00:00 postgres: walsender rep_user 192.168.1.197(49190) streaming 6/67241080
+postgres  10636   1030  0 18:05 ?        00:00:00 postgres: walsender postgres 192.168.1.198(53956) idle
 
 PostgreSQL replication service (receiver). Works on Replica server:
+UID         PID   PPID  C STIME TTY          TIME CMD
 
 PostgreSQL logical replication service (worker). Works on Replica server:
+UID         PID   PPID  C STIME TTY          TIME CMD
 ```
 
 ---

@@ -1,14 +1,26 @@
+# PostgreSQL 13
+#PG_BIN=/usr/pgsql-13/bin			# Executables directory
+#PG_DATA=/var/lib/pgsql/13/data			# Main data directory
+#PG_ARC=/var/lib/pgsql/13/archive		# Archive logs directory
+#PG_LOG_DIR=/var/lib/pgsql/13/data/log		# Directory for log files
+
 # PostgreSQL 12
 #PG_BIN=/usr/pgsql-12/bin			# Executables directory
 #PG_DATA=/var/lib/pgsql/12/data			# Main data directory
 #PG_ARC=/var/lib/pgsql/12/archive		# Archive logs directory
 #PG_LOG_DIR=/var/lib/pgsql/12/data/log		# Directory for log files
 
-# PostgreSQL 13
-#PG_BIN=/usr/pgsql-13/bin			# Executables directory
-#PG_DATA=/var/lib/pgsql/13/data			# Main data directory
-#PG_ARC=/var/lib/pgsql/13/archive		# Archive logs directory
-#PG_LOG_DIR=/var/lib/pgsql/13/data/log		# Directory for log files
+# PostgreSQL 11
+#PG_BIN=/usr/pgsql-11/bin			# Executables directory
+#PG_DATA=/var/lib/pgsql/11/data			# Main data directory
+#PG_ARC=/var/lib/pgsql/11/archive		# Archive logs directory
+#PG_LOG_DIR=/var/lib/pgsql/11/data/log		# Directory for log files
+
+# PostgreSQL 10
+#PG_BIN=/usr/pgsql-10/bin			# Executables directory
+#PG_DATA=/var/lib/pgsql/10/data			# Main data directory
+#PG_ARC=/var/lib/pgsql/10/archive		# Archive logs directory
+#PG_LOG_DIR=/var/lib/pgsql/10/data/log		# Directory for log files
 
 # ------------------------------------------------
 

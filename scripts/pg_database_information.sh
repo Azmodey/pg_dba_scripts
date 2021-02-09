@@ -70,8 +70,15 @@ for server in "${servers_list[@]}"; do
 
   # Database statistics
   echo
-  echo -e "${GREENLIGHT}Database statistics:${NC}"
-  $PG_BIN/psql -h $server -c "select p.datid, p.datname, pg_size_pretty(pg_database_size(p.datname)) as size, p.numbackends as connections, p.xact_commit as commit, p.xact_rollback as rollback, p.blks_read, p.blks_hit, p.temp_files, round(p.temp_bytes/1024/1024) as temp_mb, p.deadlocks, p.checksum_failures as chksum_fail, TO_CHAR(p.checksum_last_failure, 'dd.mm.yyyy HH24:MI:SS') as chksum_f_date, TO_CHAR(p.stats_reset, 'dd.mm.yyyy') as stat_reset from pg_stat_database p, pg_database d where p.datid=d.oid and d.datistemplate = false order by p.datid;" | grep -v ' row)' | grep -v ' rows)'
+  if [[ $POSTGRES_VER_GLOB -ge 10 && $POSTGRES_VER_GLOB -le 11 ]]; then	# >= 10 and <= 11
+    echo -e "${GREENLIGHT}Database statistics:${NC}"
+    $PG_BIN/psql -h $server -c "select p.datid, p.datname, pg_size_pretty(pg_database_size(p.datname)) as size, p.numbackends as connections, p.xact_commit as commit, p.xact_rollback as rollback, p.blks_read, p.blks_hit, p.temp_files, round(p.temp_bytes/1024/1024) as temp_mb, p.deadlocks, TO_CHAR(p.stats_reset, 'dd.mm.yyyy') as stat_reset from pg_stat_database p, pg_database d where p.datid=d.oid and d.datistemplate = false order by p.datid;" | grep -v ' row)' | grep -v ' rows)'
+  fi
+
+  if [[ $POSTGRES_VER_GLOB -ge 12 ]]; then	# >= 12
+    echo -e "${GREENLIGHT}Database statistics:${NC}"
+    $PG_BIN/psql -h $server -c "select p.datid, p.datname, pg_size_pretty(pg_database_size(p.datname)) as size, p.numbackends as connections, p.xact_commit as commit, p.xact_rollback as rollback, p.blks_read, p.blks_hit, p.temp_files, round(p.temp_bytes/1024/1024) as temp_mb, p.deadlocks, p.checksum_failures as chksum_fail, TO_CHAR(p.checksum_last_failure, 'dd.mm.yyyy HH24:MI:SS') as chksum_f_date, TO_CHAR(p.stats_reset, 'dd.mm.yyyy') as stat_reset from pg_stat_database p, pg_database d where p.datid=d.oid and d.datistemplate = false order by p.datid;" | grep -v ' row)' | grep -v ' rows)'
+  fi
   
 
 
@@ -139,13 +146,25 @@ for server in "${servers_list[@]}"; do
   # Replication status (Replica)
   if [[ $DB_STATUS != " f" ]]; then
 
-    echo -e "${GREENLIGHT}Replication status (Replica):${NC}"
-    $PG_BIN/psql -h $server -c "
-    SELECT sender_host, sender_port, pid, slot_name, status, received_lsn, received_tli,
-       CASE WHEN pg_last_wal_receive_lsn() = pg_last_wal_replay_lsn() THEN 0
-           ELSE EXTRACT (EPOCH FROM now() - pg_last_xact_replay_timestamp())
-       END AS log_delay
-    FROM pg_stat_wal_receiver;" | grep -v ' row)' | grep -v ' rows)'
+    if [[ $POSTGRES_VER_GLOB -eq 10 ]]; then	# = 10
+      echo -e "${GREENLIGHT}Replication status (Replica):${NC}"
+      $PG_BIN/psql -h $server -c "
+      SELECT pid, slot_name, status, received_lsn, received_tli,
+         CASE WHEN pg_last_wal_receive_lsn() = pg_last_wal_replay_lsn() THEN 0
+             ELSE EXTRACT (EPOCH FROM now() - pg_last_xact_replay_timestamp())
+        END AS log_delay
+      FROM pg_stat_wal_receiver;" | grep -v ' row)' | grep -v ' rows)'
+    fi
+
+    if [[ $POSTGRES_VER_GLOB -ge 11 ]]; then	# >= 11
+      echo -e "${GREENLIGHT}Replication status (Replica):${NC}"
+      $PG_BIN/psql -h $server -c "
+      SELECT sender_host, sender_port, pid, slot_name, status, received_lsn, received_tli,
+         CASE WHEN pg_last_wal_receive_lsn() = pg_last_wal_replay_lsn() THEN 0
+             ELSE EXTRACT (EPOCH FROM now() - pg_last_xact_replay_timestamp())
+        END AS log_delay
+      FROM pg_stat_wal_receiver;" | grep -v ' row)' | grep -v ' rows)'
+    fi
 
   fi
 
@@ -175,11 +194,21 @@ for server in "${servers_list[@]}"; do
 
     for datname in $datnames ; do
 
-       publication_status=`$PG_BIN/psql -t --dbname=$datname -h $server -c "select * from pg_publication;"`
-       if [[ ${#publication_status} >0 ]]; then
-         echo -e "${GREENLIGHT}Logical Replication - Publications. Dabatabase: ${UNDERLINE}$datname${NC}"
-         $PG_BIN/psql --dbname=$datname -h $server -c "select p.oid, p.pubname, a.rolname as pubowner, p.puballtables, p.pubinsert, p.pubupdate, p.pubdelete, p.pubtruncate from pg_publication p, pg_authid a where p.pubowner=a.oid;" | grep -v ' row)' | grep -v ' rows)'
-       fi
+      if [[ $POSTGRES_VER_GLOB -eq 10 ]]; then	# = 10
+        publication_status=`$PG_BIN/psql -t --dbname=$datname -h $server -c "select * from pg_publication;"`
+        if [[ ${#publication_status} >0 ]]; then
+          echo -e "${GREENLIGHT}Logical Replication - Publications. Dabatabase: ${UNDERLINE}$datname${NC}"
+          $PG_BIN/psql --dbname=$datname -h $server -c "select p.oid, p.pubname, a.rolname as pubowner, p.puballtables, p.pubinsert, p.pubupdate, p.pubdelete from pg_publication p, pg_authid a where p.pubowner=a.oid;" | grep -v ' row)' | grep -v ' rows)'
+        fi
+      fi
+
+      if [[ $POSTGRES_VER_GLOB -ge 11 ]]; then	# >= 11
+        publication_status=`$PG_BIN/psql -t --dbname=$datname -h $server -c "select * from pg_publication;"`
+        if [[ ${#publication_status} >0 ]]; then
+          echo -e "${GREENLIGHT}Logical Replication - Publications. Dabatabase: ${UNDERLINE}$datname${NC}"
+          $PG_BIN/psql --dbname=$datname -h $server -c "select p.oid, p.pubname, a.rolname as pubowner, p.puballtables, p.pubinsert, p.pubupdate, p.pubdelete, p.pubtruncate from pg_publication p, pg_authid a where p.pubowner=a.oid;" | grep -v ' row)' | grep -v ' rows)'
+        fi
+      fi
 
     done
 
