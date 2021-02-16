@@ -22,6 +22,12 @@
 #PG_ARC=/var/lib/pgsql/10/archive		# Archive logs directory
 #PG_LOG_DIR=/var/lib/pgsql/10/data/log		# Directory for log files
 
+# PostgreSQL 9.6
+PG_BIN=/usr/pgsql-9.6/bin			# Executables directory
+PG_DATA=/var/lib/pgsql/9.6/data			# Main data directory
+PG_ARC=/var/lib/pgsql/9.6/archive		# Archive logs directory
+PG_LOG_DIR=/var/lib/pgsql/9.6/data/pg_log	# Directory for log files
+
 # ------------------------------------------------
 
 # Colors

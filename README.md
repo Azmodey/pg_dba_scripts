@@ -1,6 +1,6 @@
 ## pg_dba_scripts - PostgreSQL DBA scripts
 
-A collection of shell scripts for PostgreSQL database administrator (DBA). Tested on PostgreSQL versions 10, 11, 12, 13 under CentOS 7.
+A collection of shell scripts for PostgreSQL database administrator (DBA). Tested on PostgreSQL versions 9.6, 10, 11, 12, 13 under CentOS 7.
 
 #### [scripts/pg_database_activity.sh](#pg_database_activity). PostgreSQL monitoring script, all information is displayed on one page. 
 - Displays PostgreSQL version and status (Master / Replica), hostname and IP address, CPU and Disks load.
@@ -24,7 +24,7 @@ The script allows you to quickly find out what the servers are doing and see the
 
 
 #### Small scripts to manage PostgreSQL:
-- [scripts/pg_database_hugepages.sh](#pg_database_hugepages). Shows current usage of HugePages and recommended settings for PostgreSQL.
+- [scripts/pg_database_hugepages.sh](#pg_database_hugepages). Shows free and used memory in the system, Transparent Huge Pages (THP) status, current usage of HugePages and recommended settings for PostgreSQL.
 - [scripts/pg_database_start.sh](#pg_database_start). Start PostgreSQL, confirmation is required.
 - [scripts/pg_database_stop.sh](#pg_database_stop). Stop PostgreSQL, confirmation is required.
 - [scripts/pg_database_status.sh](#pg_database_status). PostgreSQL status. Additionally, PostgreSQL processes and replication services are displayed.
@@ -38,13 +38,13 @@ The script allows you to quickly find out what the servers are doing and see the
 As user **postgres**, download the latest version of the scripts collection (see [Releases](https://github.com/Azmodey/pg_dba_scripts/releases) page):
 ```
 # sudo su - postgres
-$ wget https://github.com/Azmodey/pg_dba_scripts/archive/1.6.0.tar.gz
+$ wget https://github.com/Azmodey/pg_dba_scripts/archive/1.7.0.tar.gz
 ```
 
 Extract script files to separate directory (for example **~scripts/**) and grant the necessary execution rights:
 ```
-$ tar xvzf 1.6.0.tar.gz
-$ mv pg_dba_scripts-1.6.0/scripts ~/scripts
+$ tar xvzf 1.7.0.tar.gz
+$ mv pg_dba_scripts-1.7.0/scripts ~/scripts
 $ chmod 700 ~/scripts/*.sh
 $ chmod 600 ~/scripts/settings.txt
 ```
@@ -77,6 +77,12 @@ Modify file **settings.txt**. Uncomment and correct the entries for your current
 #PG_DATA=/var/lib/pgsql/10/data			# Main data directory
 #PG_ARC=/var/lib/pgsql/10/archive		# Archive logs directory
 #PG_LOG_DIR=/var/lib/pgsql/10/data/log		# Directory for log files
+
+# PostgreSQL 9.6
+PG_BIN=/usr/pgsql-9.6/bin			# Executables directory
+PG_DATA=/var/lib/pgsql/9.6/data			# Main data directory
+PG_ARC=/var/lib/pgsql/9.6/archive		# Archive logs directory
+PG_LOG_DIR=/var/lib/pgsql/9.6/data/pg_log	# Directory for log files
 ```
 
 ---
@@ -163,9 +169,15 @@ A cluster of three PostgreSQL servers. The first server (c7postgresql) runs Post
 ---
 ### pg_database_hugepages
 
-Shows Transparent Huge Pages (THP) status, current usage of HugePages and recommended settings for PostgreSQL.
+Shows free and used memory in the system, Transparent Huge Pages (THP) status, current usage of HugePages and recommended settings for PostgreSQL.
 
 ```
+Free and used memory in the system:
+              total        used        free      shared     buffers       cache   available
+Mem:           3.8G        1.3G        2.2G         12M         23M        291M        2.5G
+Swap:          1.9G          0B        1.9G
+
+-----------------------------------
 Transparent Huge Pages (THP):
  On: [always] madvise never
 Off: always madvise [never]
@@ -178,17 +190,17 @@ Tip: disable it
 -----------------------------------
 Current Huge pages:
 
-AnonHugePages:      8192 kB
+AnonHugePages:         0 kB
 HugePages_Total:     536
-HugePages_Free:      415
-HugePages_Rsvd:      290
+HugePages_Free:      507
+HugePages_Rsvd:      382
 HugePages_Surp:        0
 Hugepagesize:       2048 kB
 
 -----------------------------------
 Number of Required HugePages:
 
-Pid:            982
+Pid:            976
 VmPeak:            1095752 kB
 Hugepagesize:   2048 kB
 Set Huge Pages: 535

@@ -70,7 +70,7 @@ for server in "${servers_list[@]}"; do
 
   # Database statistics
   echo
-  if [[ $POSTGRES_VER_GLOB -ge 10 && $POSTGRES_VER_GLOB -le 11 ]]; then	# >= 10 and <= 11
+  if [[ $POSTGRES_VER_GLOB -ge 9 && $POSTGRES_VER_GLOB -le 11 ]]; then	# >= 9 and <= 11
     echo -e "${GREENLIGHT}Database statistics:${NC}"
     $PG_BIN/psql -h $server -c "select p.datid, p.datname, pg_size_pretty(pg_database_size(p.datname)) as size, p.numbackends as connections, p.xact_commit as commit, p.xact_rollback as rollback, p.blks_read, p.blks_hit, p.temp_files, round(p.temp_bytes/1024/1024) as temp_mb, p.deadlocks, TO_CHAR(p.stats_reset, 'dd.mm.yyyy') as stat_reset from pg_stat_database p, pg_database d where p.datid=d.oid and d.datistemplate = false order by p.datid;" | grep -v ' row)' | grep -v ' rows)'
   fi
@@ -103,18 +103,28 @@ for server in "${servers_list[@]}"; do
 
     echo -e "${GREENLIGHT}Archiving status:${NC}"
 
-    if [[ $DB_STATUS == " f" ]]; then
-      # master
-      $PG_BIN/psql -h $server -c "
-      select archived_count as archived_cnt, pg_walfile_name(pg_current_wal_lsn()), last_archived_wal, TO_CHAR(last_archived_time, 'dd.mm.yyyy HH24:MI:SS') as last_archived_time, failed_count, last_failed_wal, TO_CHAR(last_failed_time, 'dd.mm.yyyy HH24:MI:SS') as last_failed_time,
-      ('x'||substring(pg_walfile_name(pg_current_wal_lsn()),9,8))::bit(32)::int*256 +
-      ('x'||substring(pg_walfile_name(pg_current_wal_lsn()),17))::bit(32)::int -
-      ('x'||substring(last_archived_wal,9,8))::bit(32)::int*256 -
-      ('x'||substring(last_archived_wal,17))::bit(32)::int as arc_diff
-      --TO_CHAR(stats_reset, 'dd.mm.yyyy') as stats_reset
-      from pg_stat_archiver;" | grep -v ' row)' | grep -v ' rows)'
-    else
-      # replica
+    if [[ $POSTGRES_VER_GLOB -ge 10 ]]; then	# >= 10
+
+      if [[ $DB_STATUS == " f" ]]; then
+        # master
+        $PG_BIN/psql -h $server -c "
+        select archived_count as archived_cnt, pg_walfile_name(pg_current_wal_lsn()), last_archived_wal, TO_CHAR(last_archived_time, 'dd.mm.yyyy HH24:MI:SS') as last_archived_time, failed_count, last_failed_wal, TO_CHAR(last_failed_time, 'dd.mm.yyyy HH24:MI:SS') as last_failed_time,
+        ('x'||substring(pg_walfile_name(pg_current_wal_lsn()),9,8))::bit(32)::int*256 +
+        ('x'||substring(pg_walfile_name(pg_current_wal_lsn()),17))::bit(32)::int -
+        ('x'||substring(last_archived_wal,9,8))::bit(32)::int*256 -
+        ('x'||substring(last_archived_wal,17))::bit(32)::int as arc_diff
+        --TO_CHAR(stats_reset, 'dd.mm.yyyy') as stats_reset
+        from pg_stat_archiver;" | grep -v ' row)' | grep -v ' rows)'
+      else
+        # replica
+        $PG_BIN/psql -h $server -c "
+        select archived_count, last_archived_wal, TO_CHAR(last_archived_time, 'dd.mm.yyyy HH24:MI:SS') as last_archived_time, failed_count, last_failed_wal, TO_CHAR(last_failed_time, 'dd.mm.yyyy HH24:MI:SS') as last_failed_time, TO_CHAR(stats_reset, 'dd.mm.yyyy HH24:MI:SS') as stats_reset
+        from pg_stat_archiver;" | grep -v ' row)' | grep -v ' rows)'
+      fi
+
+    fi
+
+    if [[ $POSTGRES_VER_GLOB -eq 9 ]]; then	# = 9
       $PG_BIN/psql -h $server -c "
       select archived_count, last_archived_wal, TO_CHAR(last_archived_time, 'dd.mm.yyyy HH24:MI:SS') as last_archived_time, failed_count, last_failed_wal, TO_CHAR(last_failed_time, 'dd.mm.yyyy HH24:MI:SS') as last_failed_time, TO_CHAR(stats_reset, 'dd.mm.yyyy HH24:MI:SS') as stats_reset
       from pg_stat_archiver;" | grep -v ' row)' | grep -v ' rows)'
@@ -129,15 +139,24 @@ for server in "${servers_list[@]}"; do
   if [[ ${#replication_status} >0 ]]; then
 
     echo -e "${GREENLIGHT}Replication status (Master):${NC}"
-    $PG_BIN/psql -h $server -c "
-    SELECT r.client_addr AS client_addr, r.usename AS username, r.application_name AS app_name, r.pid, s.slot_name, s.slot_type, r.state, r.sync_state AS MODE,
-         (pg_wal_lsn_diff(pg_current_wal_lsn(), r.sent_lsn) / 1024)::int AS send_lag,   -- sending_lag (network problems)
-         (pg_wal_lsn_diff(r.sent_lsn, r.flush_lsn) / 1024)::int AS receive_lag,            -- receiving_lag
-         (pg_wal_lsn_diff(r.sent_lsn, r.write_lsn) / 1024)::int AS WRITE,                    -- disks problems
-         (pg_wal_lsn_diff(r.write_lsn, r.flush_lsn) / 1024)::int AS FLUSH,                   -- disks problems
-         (pg_wal_lsn_diff(r.flush_lsn, r.replay_lsn) / 1024)::int AS replay_lag,          -- replaying_lag (disks/CPU problems)
-         (pg_wal_lsn_diff(pg_current_wal_lsn(), r.replay_lsn))::int / 1024 AS total_lag
-    FROM pg_stat_replication r LEFT JOIN pg_replication_slots s ON (r.pid = s.active_pid);" | grep -v ' row)' | grep -v ' rows)'
+
+    if [[ $POSTGRES_VER_GLOB -ge 10 ]]; then	# >= 10
+      $PG_BIN/psql -h $server -c "
+      SELECT r.client_addr AS client_addr, r.usename AS username, r.application_name AS app_name, r.pid, s.slot_name, s.slot_type, r.state, r.sync_state AS MODE,
+           (pg_wal_lsn_diff(pg_current_wal_lsn(), r.sent_lsn) / 1024)::int AS send_lag,   -- sending_lag (network problems)
+           (pg_wal_lsn_diff(r.sent_lsn, r.flush_lsn) / 1024)::int AS receive_lag,            -- receiving_lag
+           (pg_wal_lsn_diff(r.sent_lsn, r.write_lsn) / 1024)::int AS WRITE,                    -- disks problems
+           (pg_wal_lsn_diff(r.write_lsn, r.flush_lsn) / 1024)::int AS FLUSH,                   -- disks problems
+           (pg_wal_lsn_diff(r.flush_lsn, r.replay_lsn) / 1024)::int AS replay_lag,          -- replaying_lag (disks/CPU problems)
+           (pg_wal_lsn_diff(pg_current_wal_lsn(), r.replay_lsn))::int / 1024 AS total_lag
+      FROM pg_stat_replication r LEFT JOIN pg_replication_slots s ON (r.pid = s.active_pid);" | grep -v ' row)' | grep -v ' rows)'
+    fi
+
+    if [[ $POSTGRES_VER_GLOB -eq 9 ]]; then	# = 9
+      $PG_BIN/psql -h $server -c "
+      SELECT r.client_addr AS client_addr, r.usename AS username, r.application_name AS app_name, r.pid, s.slot_name, s.slot_type, r.state, r.sync_state AS MODE
+      FROM pg_stat_replication r LEFT JOIN pg_replication_slots s ON (r.pid = s.active_pid);" | grep -v ' row)' | grep -v ' rows)'
+    fi
 
   fi
 
@@ -146,8 +165,27 @@ for server in "${servers_list[@]}"; do
   # Replication status (Replica)
   if [[ $DB_STATUS != " f" ]]; then
 
+    echo -e "${GREENLIGHT}Replication status (Replica):${NC}"
+
+    if [[ $POSTGRES_VER_GLOB -eq 13 ]]; then	# = 13
+      $PG_BIN/psql -h $server -c "
+      SELECT sender_host, sender_port, pid, slot_name, status, flushed_lsn, received_tli,
+      CASE WHEN pg_last_wal_receive_lsn() = pg_last_wal_replay_lsn() THEN 0
+               ELSE EXTRACT (EPOCH FROM now() - pg_last_xact_replay_timestamp())
+          END AS log_delay
+      FROM pg_stat_wal_receiver;" | grep -v ' row)' | grep -v ' rows)'
+    fi
+
+    if [[ $POSTGRES_VER_GLOB -ge 11 && $POSTGRES_VER_GLOB -le 12 ]]; then	# >= 11 and <= 12
+      $PG_BIN/psql -h $server -c "
+      SELECT sender_host, sender_port, pid, slot_name, status, received_lsn, received_tli,
+      CASE WHEN pg_last_wal_receive_lsn() = pg_last_wal_replay_lsn() THEN 0
+               ELSE EXTRACT (EPOCH FROM now() - pg_last_xact_replay_timestamp())
+          END AS log_delay
+      FROM pg_stat_wal_receiver;" | grep -v ' row)' | grep -v ' rows)'
+    fi
+
     if [[ $POSTGRES_VER_GLOB -eq 10 ]]; then	# = 10
-      echo -e "${GREENLIGHT}Replication status (Replica):${NC}"
       $PG_BIN/psql -h $server -c "
       SELECT pid, slot_name, status, received_lsn, received_tli,
          CASE WHEN pg_last_wal_receive_lsn() = pg_last_wal_replay_lsn() THEN 0
@@ -156,13 +194,10 @@ for server in "${servers_list[@]}"; do
       FROM pg_stat_wal_receiver;" | grep -v ' row)' | grep -v ' rows)'
     fi
 
-    if [[ $POSTGRES_VER_GLOB -ge 11 ]]; then	# >= 11
-      echo -e "${GREENLIGHT}Replication status (Replica):${NC}"
+    if [[ $POSTGRES_VER_GLOB -eq 9 ]]; then	# = 9
       $PG_BIN/psql -h $server -c "
-      SELECT sender_host, sender_port, pid, slot_name, status, received_lsn, received_tli,
-         CASE WHEN pg_last_wal_receive_lsn() = pg_last_wal_replay_lsn() THEN 0
-             ELSE EXTRACT (EPOCH FROM now() - pg_last_xact_replay_timestamp())
-        END AS log_delay
+      SELECT pid, slot_name, status, received_lsn, received_tli, 
+             TO_CHAR(last_msg_send_time, 'dd.mm.yyyy HH24:MI:SS') as last_msg_send_time, TO_CHAR(last_msg_receipt_time, 'dd.mm.yyyy HH24:MI:SS') as last_msg_receipt_time 
       FROM pg_stat_wal_receiver;" | grep -v ' row)' | grep -v ' rows)'
     fi
 
@@ -171,16 +206,18 @@ for server in "${servers_list[@]}"; do
 
 
   # Logical Replication status (Replica)
-  logical_replication=`$PG_BIN/psql -t -h $server -c "select * from pg_stat_subscription;"`
-  if [[ ${#logical_replication} >0 ]]; then
+  if [[ $POSTGRES_VER_GLOB -gt 9 ]]; then	# > 9
 
-    echo -e "${GREENLIGHT}Logical Replication status (Replica):${NC}"
+    logical_replication=`$PG_BIN/psql -t -h $server -c "select * from pg_stat_subscription;"`
+    if [[ ${#logical_replication} >0 ]]; then
+      echo -e "${GREENLIGHT}Logical Replication status (Replica):${NC}"
 
-    $PG_BIN/psql -h $server -c "
-    SELECT subid, subname, pid, relid, received_lsn, TO_CHAR(last_msg_send_time, 'dd.mm.yyyy HH24:MI:SS') as last_msg_send_time, 
-         TO_CHAR(last_msg_receipt_time, 'dd.mm.yyyy HH24:MI:SS') as last_msg_receipt_time, latest_end_lsn, TO_CHAR(latest_end_time, 'dd.mm.yyyy HH24:MI:SS') as latest_end_time, 
-         (pg_wal_lsn_diff(received_lsn, latest_end_lsn) / 1024)::int AS subscription_lag 
-    FROM pg_stat_subscription;" | grep -v ' row)' | grep -v ' rows)'
+      $PG_BIN/psql -h $server -c "
+      SELECT subid, subname, pid, relid, received_lsn, TO_CHAR(last_msg_send_time, 'dd.mm.yyyy HH24:MI:SS') as last_msg_send_time, 
+           TO_CHAR(last_msg_receipt_time, 'dd.mm.yyyy HH24:MI:SS') as last_msg_receipt_time, latest_end_lsn, TO_CHAR(latest_end_time, 'dd.mm.yyyy HH24:MI:SS') as latest_end_time, 
+           (pg_wal_lsn_diff(received_lsn, latest_end_lsn) / 1024)::int AS subscription_lag 
+      FROM pg_stat_subscription;" | grep -v ' row)' | grep -v ' rows)'
+    fi
 
   fi
 
@@ -216,10 +253,14 @@ for server in "${servers_list[@]}"; do
 
 
   # Replication - Subscription status
-  subscription_status=`$PG_BIN/psql -t -h $server -c "select * from pg_subscription;"`
-  if [[ ${#subscription_status} >0 ]]; then
-    echo -e "${GREENLIGHT}Logical Replication - Subscriptions:${NC}"
-    $PG_BIN/psql -h $server -c "select p.oid, d.datname as subdatname, p.subname, a.rolname as subowner, p.subenabled, p.subconninfo, p.subslotname, p.subsynccommit, p.subpublications from pg_subscription p, pg_database d, pg_authid a where p.subdbid = d.oid and p.subowner = a.oid;" | grep -v ' row)' | grep -v ' rows)'
+  if [[ $POSTGRES_VER_GLOB -ge 10 ]]; then	# >= 10
+
+    subscription_status=`$PG_BIN/psql -t -h $server -c "select * from pg_subscription;"`
+    if [[ ${#subscription_status} >0 ]]; then
+      echo -e "${GREENLIGHT}Logical Replication - Subscriptions:${NC}"
+      $PG_BIN/psql -h $server -c "select p.oid, d.datname as subdatname, p.subname, a.rolname as subowner, p.subenabled, p.subconninfo, p.subslotname, p.subsynccommit, p.subpublications from pg_subscription p, pg_database d, pg_authid a where p.subdbid = d.oid and p.subowner = a.oid;" | grep -v ' row)' | grep -v ' rows)'
+    fi
+
   fi
 
 
@@ -227,6 +268,8 @@ for server in "${servers_list[@]}"; do
   # ---------------------------------------------------------------------------------------------------------------------------------  
   # (Added)
 
+
+  if [[ $POSTGRES_VER_GLOB -ge 10 ]]; then	# >= 10
 
   for datname in $datnames ; do
 
@@ -288,6 +331,7 @@ for server in "${servers_list[@]}"; do
 
   done # for
 
+  fi
 
 
   # ---------------------------------------------------------------------------------------------------------------------------------  
@@ -396,7 +440,15 @@ SELECT (clock_timestamp() - a.xact_start)::interval(0) AS ts_age,
   long_queries=`$PG_BIN/psql -t -h $server -c "SELECT pid FROM pg_stat_activity WHERE (now() - pg_stat_activity.query_start) > interval '\30 minute\';"`
   if [[ ${#long_queries} >0 ]]; then
     echo -e "${YELLOW}Long running queries (> 30 minutes):${NC}"
-    $PG_BIN/psql -h $server -c "SELECT datname, pid, TO_CHAR(now() - pg_stat_activity.query_start, 'HH24:MI:SS') AS duration, usename, application_name as app_name, client_addr, wait_event_type as wait_type, wait_event, backend_type, SUBSTRING(query, 1, 38) as query, state FROM pg_stat_activity WHERE (now() - pg_stat_activity.query_start) > interval '\30 minute\';" | grep -v ' row)' | grep -v ' rows)'
+
+    if [[ $POSTGRES_VER_GLOB -ge 10 ]]; then	# >= 10
+      $PG_BIN/psql -h $server -c "SELECT datname, pid, TO_CHAR(now() - pg_stat_activity.query_start, 'HH24:MI:SS') AS duration, usename, application_name as app_name, client_addr, wait_event_type as wait_type, wait_event, backend_type, SUBSTRING(query, 1, 38) as query, state FROM pg_stat_activity WHERE (now() - pg_stat_activity.query_start) > interval '\30 minute\';" | grep -v ' row)' | grep -v ' rows)'
+    fi
+
+    if [[ $POSTGRES_VER_GLOB -eq 9 ]]; then	# = 9
+      $PG_BIN/psql -h $server -c "SELECT datname, pid, TO_CHAR(now() - pg_stat_activity.query_start, 'HH24:MI:SS') AS duration, usename, application_name as app_name, client_addr, wait_event_type as wait_type, wait_event, SUBSTRING(query, 1, 38) as query, state FROM pg_stat_activity WHERE (now() - pg_stat_activity.query_start) > interval '\30 minute\';" | grep -v ' row)' | grep -v ' rows)'
+    fi
+
   fi
 
 

@@ -4,6 +4,11 @@
 # https://www.percona.com/blog/2018/08/29/tune-linux-kernel-parameters-for-postgresql-optimization/
 
 echo "-----------------------------------"
+echo "Free and used memory in the system:"
+free -hw
+echo
+
+echo "-----------------------------------"
 echo "Transparent Huge Pages (THP):"
 echo " On: [always] madvise never"
 echo "Off: always madvise [never]"

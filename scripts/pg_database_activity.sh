@@ -12,46 +12,6 @@ PG_LOG_FILENAME=`ls -t $PG_LOG_DIR/postgresql-*.log | head -n1`	# newest Postgre
 
 # ------------------------------------------------
 
-# Backend Processes (Client connections)
-pid_clients=`$PG_BIN/psql -t -c "SELECT pid FROM pg_stat_activity where backend_type='client backend' and pid<>pg_backend_pid();"`
-
-total_clients_mem=0
-total_clients_count=0
-
-for pids in $pid_clients ; do
-        mem=`ps -q $pids -eo rss | sed 1d`
-        total_clients_mem=$((total_clients_mem+mem))
-        ((total_clients_count++))
-done
-
-total_clients_mem_mb=$((total_clients_mem/1024))
-
-
-# Background Processes (Server connections)
-pid_server=`$PG_BIN/psql -t -c "SELECT pid FROM pg_stat_activity where backend_type<>'client backend' and pid<>pg_backend_pid();"`
-
-echo "PID| Database| Username| Application name| Client address| Backend type| Wait event type| Wait event| Memory (KB)| CPU% " > pg_database_activity_tmp.txt
-
-total_server_mem=0
-total_server_count=0
-
-for pids in $pid_server ; do
-
-        mem=`ps -q $pids -eo rss | sed 1d`
-        cpu=`ps -q $pids -eo pcpu | sed 1d`
-        
-        pid_client_info=`$PG_BIN/psql -t -c "SELECT datname as database, usename as username, application_name, client_addr, backend_type, wait_event_type, wait_event FROM pg_stat_activity where pid=$pids;"`
-        echo "$pids|$pid_client_info|$mem| $cpu" >> pg_database_activity_tmp.txt
-
-        total_server_mem=$((total_server_mem+mem))
-        ((total_server_count++))
-done
-
-total_server_mem_mb=$((total_server_mem/1024))
-
-
-# ------------------------------------------------
-
 # Title (1st line)
 DATE=$(date '+%d.%m.%Y %H:%M:%S')
 HOST=`hostname --short`
@@ -72,6 +32,54 @@ else
   STATUS="${PURPLELIGHT}[$HOST ($HOSTIP) / PostgreSQL $POSTGRES_VER / Replica]${YELLOW}"
 fi
 
+
+# ------------------------------------------------
+
+if [[ $POSTGRES_VER_GLOB -ge 10 ]]; then	# >= 10
+
+  # Backend Processes (Client connections)
+  pid_clients=`$PG_BIN/psql -t -c "SELECT pid FROM pg_stat_activity where backend_type='client backend' and pid<>pg_backend_pid();"`
+
+  total_clients_mem=0
+  total_clients_count=0
+
+  for pids in $pid_clients ; do
+        mem=`ps -q $pids -eo rss | sed 1d`
+        total_clients_mem=$((total_clients_mem+mem))
+        ((total_clients_count++))
+  done
+
+  total_clients_mem_mb=$((total_clients_mem/1024))
+
+
+  # Background Processes (Server connections)
+  pid_server=`$PG_BIN/psql -t -c "SELECT pid FROM pg_stat_activity where backend_type<>'client backend' and pid<>pg_backend_pid();"`
+
+  echo "PID| Database| Username| Application name| Client address| Backend type| Wait event type| Wait event| Memory (KB)| CPU% " > pg_database_activity_tmp.txt
+
+  total_server_mem=0
+  total_server_count=0
+
+  for pids in $pid_server ; do
+        mem=`ps -q $pids -eo rss | sed 1d`
+        cpu=`ps -q $pids -eo pcpu | sed 1d`
+        
+        pid_client_info=`$PG_BIN/psql -t -c "SELECT datname as database, usename as username, application_name, client_addr, backend_type, wait_event_type, wait_event FROM pg_stat_activity where pid=$pids;"`
+        echo "$pids|$pid_client_info|$mem| $cpu" >> pg_database_activity_tmp.txt
+
+        total_server_mem=$((total_server_mem+mem))
+        ((total_server_count++))
+  done
+
+  total_server_mem_mb=$((total_server_mem/1024))
+
+fi
+
+
+# ------------------------------------------------
+
+
+# Title (1st line)
 echo -e "${YELLOW}[$DATE] $STATUS [CPU load (1/5/15 min): $UPTIME] [Disk load: util $IOSTAT_UTIL %, await $IOSTAT_AWAIT ms] ${NC}"
 
 
@@ -80,21 +88,32 @@ echo -e "${YELLOW}[$DATE] $STATUS [CPU load (1/5/15 min): $UPTIME] [Disk load: u
 DIR_DATA_FREE=`df -h $PG_DATA | sed 1d | grep -v used | awk '{ print $4 "\t" }' | tr -d '\t'`	# free disk space for PG_DATA
 DIR_ARC_FREE=`df -h $PG_ARC | sed 1d | grep -v used | awk '{ print $4 "\t" }' | tr -d '\t'`	# free disk space for PG_ARC
 DIR_BASE_SIZE=`du -sh $PG_DATA/base | awk '{print $1}'`		# Base folder size
-DIR_WAL_SIZE=`du -sh $PG_DATA/pg_wal | awk '{print $1}'`	# WAL folder size
+
+if [[ $POSTGRES_VER_GLOB -ge 10 ]]; then	# >= 10
+  DIR_WAL_SIZE=`du -sh $PG_DATA/pg_wal | awk '{print $1}'`	# WAL folder size
+  WAL_STR="pg_wal $DIR_WAL_SIZE"
+else
+  DIR_WAL_SIZE=`du -sh $PG_DATA/pg_xlog | awk '{print $1}'`	# WAL folder size (PostgreSQL 9.6)
+  WAL_STR="pg_xlog $DIR_WAL_SIZE"
+fi
+
 DIR_ARC_SIZE=`du -sh $PG_ARC | awk '{print $1}'`		# Archive logs folder size
 SWAP_USED=`free | grep Swap | awk '{ print $3 "\t" }' | tr -d '\t'`
 
-echo -e "${GREENLIGHT}Disk${NC}   | ${GREENLIGHT}PGDATA${NC} ${UNDERLINE}$PG_DATA${NC} / base $DIR_BASE_SIZE / pg_wal $DIR_WAL_SIZE / ${CYANLIGHT}disk free $DIR_DATA_FREE${NC} | ${GREENLIGHT}Archive logs${NC} ${UNDERLINE}$PG_ARC${NC} / size $DIR_ARC_SIZE / ${CYANLIGHT}disk free $DIR_ARC_FREE ${NC}| ${GREENLIGHT}Swap used:${NC} ${CYANLIGHT}$SWAP_USED${NC}"
+echo -e "${GREENLIGHT}Disk${NC}   | ${GREENLIGHT}PGDATA${NC} ${UNDERLINE}$PG_DATA${NC} / base $DIR_BASE_SIZE / $WAL_STR / ${CYANLIGHT}disk free $DIR_DATA_FREE${NC} | ${GREENLIGHT}Archive logs${NC} ${UNDERLINE}$PG_ARC${NC} / size $DIR_ARC_SIZE / ${CYANLIGHT}disk free $DIR_ARC_FREE ${NC}| ${GREENLIGHT}Swap used:${NC} ${CYANLIGHT}$SWAP_USED${NC}"
 
 
 
 # Title (3rd line). Connections & memory totals
-total_mem=0
-total_mem=$((total_server_mem+total_clients_mem))
-total_mem_mb=$((total_mem/1024))
-total_count=0
-total_count=$((total_clients_count+total_server_count))
-echo -e "${GREENLIGHT}Memory${NC} | PostgreSQL processes ($total_count) memory consumption: $total_mem_mb MB | ${YELLOW}Backend processes ($total_clients_count) $total_clients_mem_mb MB${NC} | ${YELLOW}Background processes ($total_server_count) $total_server_mem_mb MB${NC}"
+if [[ $POSTGRES_VER_GLOB -ge 10 ]]; then	# >= 10
+  total_mem=0
+  total_mem=$((total_server_mem+total_clients_mem))
+  total_mem_mb=$((total_mem/1024))
+  total_count=0
+  total_count=$((total_clients_count+total_server_count))
+  echo -e "${GREENLIGHT}Memory${NC} | PostgreSQL processes ($total_count) memory consumption: $total_mem_mb MB | ${YELLOW}Backend processes ($total_clients_count) $total_clients_mem_mb MB${NC} | ${YELLOW}Background processes ($total_server_count) $total_server_mem_mb MB${NC}"
+fi
+
 echo
 
 
@@ -102,19 +121,23 @@ echo
 # ------------------------------------------------
 
 # Background Processes (Server connections)
-echo -e "${GREENLIGHT}Background processes ($total_server_count) memory consumption: $total_server_mem_mb MB${NC}"
-echo "---------------------------------------------------------------------------------------------------------------------------------------------------------------"
+if [[ $POSTGRES_VER_GLOB -ge 10 ]]; then	# >= 10
 
-sort -t '|' -k9 -n pg_database_activity_tmp.txt | column -t -s '|' -o ' |'	# sort file by memory column, then show like table
+  echo -e "${GREENLIGHT}Background processes ($total_server_count) memory consumption: $total_server_mem_mb MB${NC}"
+  echo "---------------------------------------------------------------------------------------------------------------------------------------------------------------"
 
-echo "---------------------------------------------------------------------------------------------------------------------------------------------------------------"
-echo
-rm pg_database_activity_tmp.txt
+  sort -t '|' -k9 -n pg_database_activity_tmp.txt | column -t -s '|' -o ' |'	# sort file by memory column, then show like table
+
+  echo "---------------------------------------------------------------------------------------------------------------------------------------------------------------"
+  echo
+  rm pg_database_activity_tmp.txt
+
+fi
 
 
 
 # Database statistics
-if [[ $POSTGRES_VER_GLOB -ge 10 && $POSTGRES_VER_GLOB -le 11 ]]; then	# >= 10 and <= 11
+if [[ $POSTGRES_VER_GLOB -ge 9 && $POSTGRES_VER_GLOB -le 11 ]]; then	# >= 9 and <= 11
   echo -e "${GREENLIGHT}Database statistics:${NC}"
   $PG_BIN/psql -c "select p.datid, p.datname, pg_size_pretty(pg_database_size(p.datname)) as size, p.numbackends as connections, p.xact_commit as commit, p.xact_rollback as rollback, p.blks_read, p.blks_hit, p.temp_files, round(p.temp_bytes/1024/1024) as temp_mb, p.deadlocks, TO_CHAR(p.stats_reset, 'dd.mm.yyyy') as stat_reset from pg_stat_database p, pg_database d where p.datid=d.oid and d.datistemplate = false order by p.datid;" | grep -v ' row)' | grep -v ' rows)'
 fi
@@ -147,18 +170,28 @@ if [[ ${#archiving_status} >0 ]]; then
 
   echo -e "${GREENLIGHT}Archiving status:${NC}"
 
-  if [[ $DB_STATUS == " f" ]]; then
-    # master
-    $PG_BIN/psql -c "
-    select archived_count as archived_cnt, pg_walfile_name(pg_current_wal_lsn()), last_archived_wal, TO_CHAR(last_archived_time, 'dd.mm.yyyy HH24:MI:SS') as last_archived_time, failed_count, last_failed_wal, TO_CHAR(last_failed_time, 'dd.mm.yyyy HH24:MI:SS') as last_failed_time,
-    ('x'||substring(pg_walfile_name(pg_current_wal_lsn()),9,8))::bit(32)::int*256 +
-    ('x'||substring(pg_walfile_name(pg_current_wal_lsn()),17))::bit(32)::int -
-    ('x'||substring(last_archived_wal,9,8))::bit(32)::int*256 -
-    ('x'||substring(last_archived_wal,17))::bit(32)::int as arc_diff
-    --TO_CHAR(stats_reset, 'dd.mm.yyyy') as stats_reset
-    from pg_stat_archiver;" | grep -v ' row)' | grep -v ' rows)'
-  else
-    # replica
+  if [[ $POSTGRES_VER_GLOB -ge 10 ]]; then	# >= 10
+
+    if [[ $DB_STATUS == " f" ]]; then
+      # master
+      $PG_BIN/psql -c "
+      select archived_count as archived_cnt, pg_walfile_name(pg_current_wal_lsn()), last_archived_wal, TO_CHAR(last_archived_time, 'dd.mm.yyyy HH24:MI:SS') as last_archived_time, failed_count, last_failed_wal, TO_CHAR(last_failed_time, 'dd.mm.yyyy HH24:MI:SS') as last_failed_time,
+      ('x'||substring(pg_walfile_name(pg_current_wal_lsn()),9,8))::bit(32)::int*256 +
+      ('x'||substring(pg_walfile_name(pg_current_wal_lsn()),17))::bit(32)::int -
+      ('x'||substring(last_archived_wal,9,8))::bit(32)::int*256 -
+      ('x'||substring(last_archived_wal,17))::bit(32)::int as arc_diff
+      --TO_CHAR(stats_reset, 'dd.mm.yyyy') as stats_reset
+      from pg_stat_archiver;" | grep -v ' row)' | grep -v ' rows)'
+    else
+      # replica
+      $PG_BIN/psql -c "
+      select archived_count, last_archived_wal, TO_CHAR(last_archived_time, 'dd.mm.yyyy HH24:MI:SS') as last_archived_time, failed_count, last_failed_wal, TO_CHAR(last_failed_time, 'dd.mm.yyyy HH24:MI:SS') as last_failed_time, TO_CHAR(stats_reset, 'dd.mm.yyyy HH24:MI:SS') as stats_reset
+      from pg_stat_archiver;" | grep -v ' row)' | grep -v ' rows)'
+    fi
+
+  fi
+
+  if [[ $POSTGRES_VER_GLOB -eq 9 ]]; then	# = 9
     $PG_BIN/psql -c "
     select archived_count, last_archived_wal, TO_CHAR(last_archived_time, 'dd.mm.yyyy HH24:MI:SS') as last_archived_time, failed_count, last_failed_wal, TO_CHAR(last_failed_time, 'dd.mm.yyyy HH24:MI:SS') as last_failed_time, TO_CHAR(stats_reset, 'dd.mm.yyyy HH24:MI:SS') as stats_reset
     from pg_stat_archiver;" | grep -v ' row)' | grep -v ' rows)'
@@ -175,15 +208,24 @@ replication_status=`$PG_BIN/psql -t -c "select * from pg_stat_replication;"`
 if [[ ${#replication_status} >0 ]]; then
 
   echo -e "${GREENLIGHT}Replication status (Master):${NC}"
-  $PG_BIN/psql -c "
-  SELECT r.client_addr AS client_addr, r.usename AS username, r.application_name AS app_name, r.pid, s.slot_name, s.slot_type, r.state, r.sync_state AS MODE,
+
+  if [[ $POSTGRES_VER_GLOB -ge 10 ]]; then	# >= 10
+    $PG_BIN/psql -c "
+    SELECT r.client_addr AS client_addr, r.usename AS username, r.application_name AS app_name, r.pid, s.slot_name, s.slot_type, r.state, r.sync_state AS MODE,
          (pg_wal_lsn_diff(pg_current_wal_lsn(), r.sent_lsn) / 1024)::int AS send_lag,   -- sending_lag (network problems)
          (pg_wal_lsn_diff(r.sent_lsn, r.flush_lsn) / 1024)::int AS receive_lag,            -- receiving_lag
          (pg_wal_lsn_diff(r.sent_lsn, r.write_lsn) / 1024)::int AS WRITE,                    -- disks problems
          (pg_wal_lsn_diff(r.write_lsn, r.flush_lsn) / 1024)::int AS FLUSH,                   -- disks problems
          (pg_wal_lsn_diff(r.flush_lsn, r.replay_lsn) / 1024)::int AS replay_lag,          -- replaying_lag (disks/CPU problems)
          (pg_wal_lsn_diff(pg_current_wal_lsn(), r.replay_lsn))::int / 1024 AS total_lag
-  FROM pg_stat_replication r LEFT JOIN pg_replication_slots s ON (r.pid = s.active_pid);" | grep -v ' row)' | grep -v ' rows)'
+    FROM pg_stat_replication r LEFT JOIN pg_replication_slots s ON (r.pid = s.active_pid);" | grep -v ' row)' | grep -v ' rows)'
+  fi
+
+  if [[ $POSTGRES_VER_GLOB -eq 9 ]]; then	# = 9
+    $PG_BIN/psql -c "
+    SELECT r.client_addr AS client_addr, r.usename AS username, r.application_name AS app_name, r.pid, s.slot_name, s.slot_type, r.state, r.sync_state AS MODE
+    FROM pg_stat_replication r LEFT JOIN pg_replication_slots s ON (r.pid = s.active_pid);" | grep -v ' row)' | grep -v ' rows)'
+  fi
 
   PG_LOG_LINES=$((PG_LOG_LINES-5))
 
@@ -195,12 +237,40 @@ fi
 if [[ $DB_STATUS != " f" ]]; then
 
   echo -e "${GREENLIGHT}Replication status (Replica):${NC}"
-  $PG_BIN/psql -c "
-  SELECT sender_host, sender_port, pid, slot_name, status, received_lsn, received_tli,
-       CASE WHEN pg_last_wal_receive_lsn() = pg_last_wal_replay_lsn() THEN 0
-           ELSE EXTRACT (EPOCH FROM now() - pg_last_xact_replay_timestamp())
-       END AS log_delay
-  FROM pg_stat_wal_receiver;" | grep -v ' row)' | grep -v ' rows)'
+
+  if [[ $POSTGRES_VER_GLOB -eq 13 ]]; then	# = 13
+    $PG_BIN/psql -c "
+    SELECT sender_host, sender_port, pid, slot_name, status, flushed_lsn, received_tli,
+	CASE WHEN pg_last_wal_receive_lsn() = pg_last_wal_replay_lsn() THEN 0
+             ELSE EXTRACT (EPOCH FROM now() - pg_last_xact_replay_timestamp())
+        END AS log_delay
+    FROM pg_stat_wal_receiver;" | grep -v ' row)' | grep -v ' rows)'
+  fi
+
+  if [[ $POSTGRES_VER_GLOB -ge 11 && $POSTGRES_VER_GLOB -le 12 ]]; then	# >= 11 and <= 12
+    $PG_BIN/psql -c "
+    SELECT sender_host, sender_port, pid, slot_name, status, received_lsn, received_tli,
+	CASE WHEN pg_last_wal_receive_lsn() = pg_last_wal_replay_lsn() THEN 0
+             ELSE EXTRACT (EPOCH FROM now() - pg_last_xact_replay_timestamp())
+        END AS log_delay
+    FROM pg_stat_wal_receiver;" | grep -v ' row)' | grep -v ' rows)'
+  fi
+
+  if [[ $POSTGRES_VER_GLOB -eq 10 ]]; then	# = 10
+    $PG_BIN/psql -c "
+    SELECT pid, slot_name, status, received_lsn, received_tli,
+	CASE WHEN pg_last_wal_receive_lsn() = pg_last_wal_replay_lsn() THEN 0
+             ELSE EXTRACT (EPOCH FROM now() - pg_last_xact_replay_timestamp())
+        END AS log_delay
+    FROM pg_stat_wal_receiver;" | grep -v ' row)' | grep -v ' rows)'
+  fi
+
+  if [[ $POSTGRES_VER_GLOB -eq 9 ]]; then	# = 9
+    $PG_BIN/psql -c "
+    SELECT pid, slot_name, status, received_lsn, received_tli, 
+           TO_CHAR(last_msg_send_time, 'dd.mm.yyyy HH24:MI:SS') as last_msg_send_time, TO_CHAR(last_msg_receipt_time, 'dd.mm.yyyy HH24:MI:SS') as last_msg_receipt_time 
+    FROM pg_stat_wal_receiver;" | grep -v ' row)' | grep -v ' rows)'
+  fi
 
   PG_LOG_LINES=$((PG_LOG_LINES-5))
 
@@ -209,18 +279,22 @@ fi
 
 
 # Logical Replication status (Replica)
-logical_replication=`$PG_BIN/psql -t -c "select * from pg_stat_subscription;"`
-if [[ ${#logical_replication} >0 ]]; then
+if [[ $POSTGRES_VER_GLOB -gt 9 ]]; then	# > 9
 
-  echo -e "${GREENLIGHT}Logical Replication status (Replica):${NC}"
+  logical_replication=`$PG_BIN/psql -t -c "select * from pg_stat_subscription;"`
+  if [[ ${#logical_replication} >0 ]]; then
 
-  $PG_BIN/psql -c "
-  SELECT subid, subname, pid, relid, received_lsn, TO_CHAR(last_msg_send_time, 'dd.mm.yyyy HH24:MI:SS') as last_msg_send_time, 
-         TO_CHAR(last_msg_receipt_time, 'dd.mm.yyyy HH24:MI:SS') as last_msg_receipt_time, latest_end_lsn, TO_CHAR(latest_end_time, 'dd.mm.yyyy HH24:MI:SS') as latest_end_time, 
-         (pg_wal_lsn_diff(received_lsn, latest_end_lsn) / 1024)::int AS subscription_lag 
-  FROM pg_stat_subscription;" | grep -v ' row)' | grep -v ' rows)'
+    echo -e "${GREENLIGHT}Logical Replication status (Replica):${NC}"
 
-  PG_LOG_LINES=$((PG_LOG_LINES-5))
+    $PG_BIN/psql -c "
+    SELECT subid, subname, pid, relid, received_lsn, TO_CHAR(last_msg_send_time, 'dd.mm.yyyy HH24:MI:SS') as last_msg_send_time, 
+           TO_CHAR(last_msg_receipt_time, 'dd.mm.yyyy HH24:MI:SS') as last_msg_receipt_time, latest_end_lsn, TO_CHAR(latest_end_time, 'dd.mm.yyyy HH24:MI:SS') as latest_end_time, 
+           (pg_wal_lsn_diff(received_lsn, latest_end_lsn) / 1024)::int AS subscription_lag 
+    FROM pg_stat_subscription;" | grep -v ' row)' | grep -v ' rows)'
+
+    PG_LOG_LINES=$((PG_LOG_LINES-5))
+
+  fi
 
 fi
 
