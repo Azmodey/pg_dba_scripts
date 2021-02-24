@@ -5,7 +5,7 @@
 source ./settings.txt
 
 echo "PostgreSQL processes:"
-ps -afH --forest -u postgres | grep -v sshd | grep -v bash | grep -v 'su - postgres' | grep -v 'ps -afH' | grep -v '/usr/bin/mc' | grep -v '/sbin/agetty'
+ps -afH --forest -u postgres | grep -v sshd | grep -v bash | grep -v 'su - postgres' | grep -v 'ps -afH' | grep -v '/usr/bin/mc' | grep -v '\_ mc' | grep -v '/sbin/agetty'
 echo
 
 echo "PostgreSQL network connection:"
@@ -18,6 +18,9 @@ echo
 
 echo "PostgreSQL replication service (sender). Works on Master server:"
 ps -aef | grep -v grep | grep "PID\|sender"
+echo
+
+echo "PGDATA: $PGDATA"
 echo
 
 echo "PostgreSQL replication service (receiver). Works on Replica server:"

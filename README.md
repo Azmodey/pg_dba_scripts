@@ -1,6 +1,6 @@
 ## pg_dba_scripts - PostgreSQL DBA scripts
 
-A collection of shell scripts for PostgreSQL database administrator (DBA). Tested on PostgreSQL versions 9.6, 10, 11, 12, 13 under CentOS 7.
+A collection of shell scripts for PostgreSQL database administrator (DBA). Tested on PostgreSQL versions 9.6, 10, 11, 12, 13 under CentOS 7 and Debian 10.
 
 #### [scripts/pg_database_activity.sh](#pg_database_activity). PostgreSQL monitoring script, all information is displayed on one page. 
 - Displays PostgreSQL version and status (Master / Replica), hostname and IP address, CPU and Disks load.
@@ -38,13 +38,13 @@ The script allows you to quickly find out what the servers are doing and see the
 As user **postgres**, download the latest version of the scripts collection (see [Releases](https://github.com/Azmodey/pg_dba_scripts/releases) page):
 ```
 # sudo su - postgres
-$ wget https://github.com/Azmodey/pg_dba_scripts/archive/1.7.0.tar.gz
+$ wget https://github.com/Azmodey/pg_dba_scripts/archive/1.8.0.tar.gz
 ```
 
 Extract script files to separate directory (for example **~scripts/**) and grant the necessary execution rights:
 ```
-$ tar xvzf 1.7.0.tar.gz
-$ mv pg_dba_scripts-1.7.0/scripts ~/scripts
+$ tar xvzf 1.8.0.tar.gz
+$ mv pg_dba_scripts-1.8.0/scripts ~/scripts
 $ chmod 700 ~/scripts/*.sh
 $ chmod 600 ~/scripts/settings.txt
 ```
@@ -54,35 +54,24 @@ $ chmod 600 ~/scripts/settings.txt
 
 Modify file **settings.txt**. Uncomment and correct the entries for your current PostgreSQL version.
 ```
-# PostgreSQL 13
-#PG_BIN=/usr/pgsql-13/bin			# Executables directory
-#PG_DATA=/var/lib/pgsql/13/data			# Main data directory
-#PG_ARC=/var/lib/pgsql/13/archive		# Archive logs directory
-#PG_LOG_DIR=/var/lib/pgsql/13/data/log		# Directory for log files
+# PostgreSQL version
+PG_VER=12						# Supported PostgreSQL versions: 9.6, 10, 11, 12, 13
 
-# PostgreSQL 12
-#PG_BIN=/usr/pgsql-12/bin			# Executables directory
-#PG_DATA=/var/lib/pgsql/12/data			# Main data directory
-#PG_ARC=/var/lib/pgsql/12/archive		# Archive logs directory
-#PG_LOG_DIR=/var/lib/pgsql/12/data/log		# Directory for log files
 
-# PostgreSQL 11
-#PG_BIN=/usr/pgsql-11/bin			# Executables directory
-#PG_DATA=/var/lib/pgsql/11/data			# Main data directory
-#PG_ARC=/var/lib/pgsql/11/archive		# Archive logs directory
-#PG_LOG_DIR=/var/lib/pgsql/11/data/log		# Directory for log files
+# Red Hat / CentOS
+#PG_BIN=/usr/pgsql-$PG_VER/bin				# Executables directory (by default, do not change!)
 
-# PostgreSQL 10
-#PG_BIN=/usr/pgsql-10/bin			# Executables directory
-#PG_DATA=/var/lib/pgsql/10/data			# Main data directory
-#PG_ARC=/var/lib/pgsql/10/archive		# Archive logs directory
-#PG_LOG_DIR=/var/lib/pgsql/10/data/log		# Directory for log files
+#PG_DATA=/var/lib/pgsql/$PG_VER/data			# Main data directory
+#PG_ARC=/var/lib/pgsql/$PG_VER/archive			# Archive logs directory
+#PG_LOG_DIR=/var/lib/pgsql/$PG_VER/data/log		# Directory for log files. For PostgreSQL 9.6 directory is /pg_log
 
-# PostgreSQL 9.6
-PG_BIN=/usr/pgsql-9.6/bin			# Executables directory
-PG_DATA=/var/lib/pgsql/9.6/data			# Main data directory
-PG_ARC=/var/lib/pgsql/9.6/archive		# Archive logs directory
-PG_LOG_DIR=/var/lib/pgsql/9.6/data/pg_log	# Directory for log files
+
+# Debian
+#PG_BIN=/usr/lib/postgresql/$PG_VER/bin			# Executables directory (by default, do not change!)
+
+#PG_DATA=/var/lib/postgresql/$PG_VER/data		# Main data directory
+#PG_ARC=/var/lib/postgresql/$PG_VER/archive		# Archive logs directory
+#PG_LOG_DIR=/var/lib/postgresql/$PG_VER/data/log	# Directory for log files. For PostgreSQL 9.6 directory is /pg_log
 ```
 
 ---
