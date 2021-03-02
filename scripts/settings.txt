@@ -11,7 +11,7 @@ PG_VER=12						# Supported PostgreSQL versions: 9.6, 10, 11, 12, 13
 #PG_LOG_DIR=/var/lib/pgsql/$PG_VER/data/log		# Directory for log files. For PostgreSQL 9.6 directory is /pg_log
 
 
-# Debian
+# Debian / Ubuntu
 #PG_BIN=/usr/lib/postgresql/$PG_VER/bin			# Executables directory (by default, do not change!)
 
 #PG_DATA=/var/lib/postgresql/$PG_VER/data		# Main data directory

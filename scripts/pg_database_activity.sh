@@ -13,7 +13,7 @@ PG_LOG_FILENAME=`ls -t $PG_LOG_DIR/postgresql-*.log | head -n1`	# newest Postgre
 # ------------------------------------------------
 
 # System
-PLATFORM=`awk -F= '/^NAME/{print $2}' /etc/os-release | tr -d '"'`	# Red Hat Enterprise Linux Server / CentOS Linux / Debian GNU/Linux
+PLATFORM=`awk -F= '/^NAME/{print $2}' /etc/os-release | tr -d '"'`	# Red Hat Enterprise Linux Server / CentOS Linux / Debian GNU/Linux / Ubuntu
 
 # Title (1st line)
 DATE=$(date '+%d.%m.%Y %H:%M:%S')
@@ -30,6 +30,13 @@ if [[ $PLATFORM == "Debian GNU/Linux" ]]; then
   IOSTAT_R_AWAIT=`iostat -d -x -g ALL | grep ALL | tr -s " " | cut -d " " -f 11`
   IOSTAT_W_AWAIT=`iostat -d -x -g ALL | grep ALL | tr -s " " | cut -d " " -f 12`
   IOSTAT_UTIL=`iostat -d -x -g ALL | grep ALL | tr -s " " | cut -d " " -f 17`
+
+  IOSTAT_AWAIT=`awk "BEGIN {print ($IOSTAT_R_AWAIT+$IOSTAT_W_AWAIT)/2}"`
+fi
+if [[ $PLATFORM == "Ubuntu" ]]; then
+  IOSTAT_R_AWAIT=`iostat -d -x -g ALL | grep ALL | tr -s " " | cut -d " " -f 7`
+  IOSTAT_W_AWAIT=`iostat -d -x -g ALL | grep ALL | tr -s " " | cut -d " " -f 13`
+  IOSTAT_UTIL=`iostat -d -x -g ALL | grep ALL | tr -s " " | cut -d " " -f 22`
 
   IOSTAT_AWAIT=`awk "BEGIN {print ($IOSTAT_R_AWAIT+$IOSTAT_W_AWAIT)/2}"`
 fi
@@ -139,11 +146,11 @@ if [[ $POSTGRES_VER_GLOB -ge 10 ]]; then	# >= 10
   echo -e "${GREENLIGHT}Background processes ($total_server_count) memory consumption: $total_server_mem_mb MB${NC}"
   echo "---------------------------------------------------------------------------------------------------------------------------------------------------------------"
 
-  if [[ $PLATFORM == "Red Hat Enterprise Linux Server" || $PLATFORM == "CentOS Linux" ]]; then
+  if [[ $PLATFORM == "Red Hat Enterprise Linux Server" || $PLATFORM == "CentOS Linux"  ]]; then
     sort -t '|' -k9 -n pg_database_activity_tmp.txt | column -t -s '|' -o ' |'	# sort file by memory column, then show like table
   fi
 
-  if [[ $PLATFORM == "Debian GNU/Linux" ]]; then
+  if [[ $PLATFORM == "Debian GNU/Linux" || $PLATFORM == "Ubuntu" ]]; then
     sort -t '|' -k9 -n pg_database_activity_tmp.txt | column -t -s '|'	# sort file by memory column
   fi
 
