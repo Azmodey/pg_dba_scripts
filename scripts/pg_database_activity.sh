@@ -27,16 +27,16 @@ if [[ $PLATFORM == "Red Hat Enterprise Linux Server" || $PLATFORM == "CentOS Lin
   IOSTAT_UTIL=`iostat -d -x -g ALL | grep ALL | tr -s " " | cut -d " " -f 15`
 fi
 if [[ $PLATFORM == "Debian GNU/Linux" ]]; then
-  IOSTAT_R_AWAIT=`iostat -d -x -g ALL | grep ALL | tr -s " " | cut -d " " -f 11`
-  IOSTAT_W_AWAIT=`iostat -d -x -g ALL | grep ALL | tr -s " " | cut -d " " -f 12`
-  IOSTAT_UTIL=`iostat -d -x -g ALL | grep ALL | tr -s " " | cut -d " " -f 17`
+  IOSTAT_R_AWAIT=`iostat -d -x -g ALL | grep ALL | tr -s " " | cut -d " " -f 11 | sed 's/,/./g'`
+  IOSTAT_W_AWAIT=`iostat -d -x -g ALL | grep ALL | tr -s " " | cut -d " " -f 12 | sed 's/,/./g'`
+  IOSTAT_UTIL=`iostat -d -x -g ALL | grep ALL | tr -s " " | cut -d " " -f 17 | sed 's/,/./g'`
 
   IOSTAT_AWAIT=`awk "BEGIN {print ($IOSTAT_R_AWAIT+$IOSTAT_W_AWAIT)/2}"`
 fi
 if [[ $PLATFORM == "Ubuntu" ]]; then
-  IOSTAT_R_AWAIT=`iostat -d -x -g ALL | grep ALL | tr -s " " | cut -d " " -f 7`
-  IOSTAT_W_AWAIT=`iostat -d -x -g ALL | grep ALL | tr -s " " | cut -d " " -f 13`
-  IOSTAT_UTIL=`iostat -d -x -g ALL | grep ALL | tr -s " " | cut -d " " -f 22`
+  IOSTAT_R_AWAIT=`iostat -d -x -g ALL | grep ALL | tr -s " " | cut -d " " -f 7 | sed 's/,/./g'`
+  IOSTAT_W_AWAIT=`iostat -d -x -g ALL | grep ALL | tr -s " " | cut -d " " -f 13 | sed 's/,/./g'`
+  IOSTAT_UTIL=`iostat -d -x -g ALL | grep ALL | tr -s " " | cut -d " " -f 22 | sed 's/,/./g'`
 
   IOSTAT_AWAIT=`awk "BEGIN {print ($IOSTAT_R_AWAIT+$IOSTAT_W_AWAIT)/2}"`
 fi
